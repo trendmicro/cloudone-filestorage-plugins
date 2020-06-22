@@ -1,14 +1,14 @@
 # Post Scan Action - Promote or Quarantine
 
-The Lambda Function example to promote clean files or quarantine malicious files scanned by Cloud One File Storage Security
+This example Lambda function promotes clean files and quarantines malicious files scanned by Cloud One File Storage Security.
 
 ## Prerequisite
 
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
-- Two S3 Buckets, one for promote and one for quarantine.
-- An IAM role for this Lambda Function that has
+- Two S3 buckets: a 'Promote bucket' for clean files, and a 'Quarantine bucket' for quarantined files
+- An IAM role for this Lambda function that has:
   - `AWSLambdaBasicExecutionRole` policy
-  - Permission to copy objects from S3 Bucket scanned by File Storage Security into Promote or Quarantine S3 Bucket
+  - Permission to copy objects from the S3 bucket scanned by File Storage Security into the Promote or Quarantine buckets
 
     Example IAM Policy
 
