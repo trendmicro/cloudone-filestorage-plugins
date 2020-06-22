@@ -1,0 +1,13 @@
+{
+  "version": "0.1",
+  "allowCompoundWords": true,
+  "ignorePaths": [
+  ],
+  "ignoreRegExpList": [
+  ],
+  "words": [
+    "boto",
+    "botocore"
+  ],
+  "ignoreWords": []
+}
