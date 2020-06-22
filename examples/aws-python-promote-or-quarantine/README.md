@@ -5,6 +5,7 @@ The Lambda Function example to promote clean files or quarantine malicious files
 ## Prerequisite
 
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
+- Two S3 Buckets, one for promote and one for quarantine.
 - An IAM role for this Lambda Function that has
   - `AWSLambdaBasicExecutionRole` policy
   - Permission to copy objects from S3 Bucket scanned by File Storage Security into Promote or Quarantine S3 Bucket
