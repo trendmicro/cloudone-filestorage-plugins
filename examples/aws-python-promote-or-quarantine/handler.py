@@ -1,10 +1,24 @@
 import json
 import os
-import logging
 import boto3
 from botocore.exceptions import ClientError
 import urllib.parse
-import time
+import re
+
+s3_domain_pattern = 's3(\..+)?\.amazonaws.com'
+
+def parse_s3_object_url(url_string):
+    url = urllib.parse.urlparse(url_string)
+    # check pre-signed URL type, path or virtual
+    if re.fullmatch(s3_domain_pattern, url.netloc):
+        bucket = url.path.split('/')[1]
+        s3_object = '/'.join(url.path.split('/')[2:])
+    else:
+        bucket = url.netloc.split('.')[0]
+        s3_object = url.path[1:]
+    object_key = urllib.parse.unquote_plus(s3_object)
+
+    return bucket, object_key
 
 def copy_object(source_bucket, source_key, dest_bucket,dest_key ):
     s3 = boto3.client('s3')
@@ -20,31 +34,23 @@ def delete_objects(bucket, prefix, objects):
     s3.delete_objects(Bucket=bucket, Delete=objects)
 
 def lambda_handler(event, context):
-    quarantineBucket = os.environ['QUARANTINEBUCKET']
-    promoteBucket = os.environ['PROMOTEBUCKET']
+    quarantine_bucket = os.environ['QUARANTINEBUCKET']
+    promote_bucket = os.environ['PROMOTEBUCKET']
     for record in event['Records']:
         message = json.loads(record['Sns']['Message'])
-        scanResults = message['scanning_result']
-        findings = scanResults.get('Findings')
-        URL = message["file_url"]
-        result = message["scanner_status_message"]
-        if result == "unsuccessful scan":
-            return False
-        if result != "successful scan":
-            return {'statusCode': 200}
-        split = URL.split("/")
-        bucket = split[2]
-        S3object = split[-1]
-        ObjectKey = urllib.parse.unquote_plus(S3object)
-        srcBucket = urllib.parse.unquote_plus(bucket).split('.')[0]
+        print(json.dumps(message))
+
+        src_bucket, object_key = parse_s3_object_url(message['file_url'])
+        print('Source Bucket: ', src_bucket)
+        print('Object Key: ', object_key)
+
+        findings = message['scanning_result'].get('Findings')
 
         if not findings:
-            copy_object(source_bucket=srcBucket, dest_bucket=promoteBucket, source_key=ObjectKey, dest_key=ObjectKey)
-            delete_objects(bucket=srcBucket, prefix='', objects=[ObjectKey])
+            copy_object(source_bucket=src_bucket, dest_bucket=promote_bucket, source_key=object_key, dest_key=object_key)
+            delete_objects(bucket=src_bucket, prefix='', objects=[object_key])
+            print('Promoted file successfully')
         else:
-            copy_object(source_bucket=srcBucket, dest_bucket=quarantineBucket, source_key=ObjectKey, dest_key=ObjectKey)
-            delete_objects(bucket=srcBucket, prefix='', objects=[ObjectKey])
-    return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
-    }
+            copy_object(source_bucket=src_bucket, dest_bucket=quarantine_bucket, source_key=object_key, dest_key=object_key)
+            delete_objects(bucket=src_bucket, prefix='', objects=[object_key])
+            print('Quarantined file successfully')
