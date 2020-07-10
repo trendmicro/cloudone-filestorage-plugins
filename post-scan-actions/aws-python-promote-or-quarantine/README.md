@@ -21,14 +21,18 @@ This example Lambda function promotes clean files and quarantines malicious ones
                  "Effect": "Allow",
                  "Action": [
                      "s3:GetObject",
-                     "s3:DeleteObject"
+                     "s3:DeleteObject",
+                     "s3:GetObjectTagging"
                  ],
                  "Resource": "arn:aws:s3:::<YOUR_BUCKET_TO_SCAN>/*"
              },
              {
                  "Sid": "CopyToPromoteOrQuarantineBucket",
                  "Effect": "Allow",
-                 "Action": "s3:PutObject",
+                 "Action": [
+                     "s3:PutObject",
+                     "s3:PutObjectTagging"
+                 ],
                  "Resource": [
                      "arn:aws:s3:::<YOUR_QUARANTINE_BUCKET>/*",
                      "arn:aws:s3:::<YOUR_PROMOTE_BUCKET>/*"
