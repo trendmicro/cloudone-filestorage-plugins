@@ -1,6 +1,7 @@
 import json
 import os
 import boto3
+import time
 from botocore.exceptions import ClientError
 import urllib.parse
 import re
@@ -36,6 +37,7 @@ def delete_objects(bucket, prefix, objects):
 def lambda_handler(event, context):
     quarantine_bucket = os.environ['QUARANTINEBUCKET']
     promote_bucket = os.environ['PROMOTEBUCKET']
+    time.sleep(15)
     for record in event['Records']:
         message = json.loads(record['Sns']['Message'])
         print(json.dumps(message))
