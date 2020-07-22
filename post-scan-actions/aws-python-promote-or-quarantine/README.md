@@ -153,6 +153,11 @@ After a scan occurs, this example Lambda function places clean files in one buck
         - In the **Key** field, enter `QUARANTINEBUCKET` 
         - In the **Value** field, enter `fss-test-quarantine`
     - Click **Save** to save both variables.
+4. **Adjust timeout**
+    -  Scroll to the **Basic settings** section.
+    -  Click **Edit** (on the right).
+    -  Set the **Timeout** to 30.
+    -  Click **Save** to save settings.
 
 </details>
 
@@ -171,7 +176,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
     aws lambda create-function --function-name <YOUR_FSS_FUNC_NAME> \
     --role <YOUR_FSS_LAMBDA_ROLE> \
     --runtime python3.8 \
-    --timeout 15 \
+    --timeout 30 \
     --memory-size 512 \
     --handler handler.lambda_handler \
     --zip-file fileb://zip/<YOUR_ZIP_NAME>.zip \
