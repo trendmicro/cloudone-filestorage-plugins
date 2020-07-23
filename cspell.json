@@ -4,6 +4,7 @@
   "ignorePaths": [
   ],
   "ignoreRegExpList": [
+    ":.*:"
   ],
   "words": [
     "boto",
