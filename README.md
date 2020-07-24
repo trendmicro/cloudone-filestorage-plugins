@@ -11,4 +11,4 @@ This repository contains Cloud One File Storage Security post-scan actions refer
 
 ## How to contribute
 
-Follow our [CONTRIBUTING](./CONTRIBUTING.md) guide.
+Follow our [CONTRIBUTING](.github/CONTRIBUTING.md) guide.
