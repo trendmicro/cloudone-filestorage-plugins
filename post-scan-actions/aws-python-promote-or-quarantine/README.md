@@ -1,6 +1,6 @@
 # Post Scan Action - Promote or Quarantine
 
-After a scan occurs, this example Lambda function places clean files in one bucket and malicious files in another.
+After a scan occurs, this example Lambda function places clean files in one bucket (a 'Promote' bucket) and malicious files in another (a 'Quarantine' bucket).
 
 ## Prerequisites
 
