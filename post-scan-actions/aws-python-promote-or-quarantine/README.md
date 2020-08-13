@@ -8,8 +8,8 @@ After a scan occurs, this example Lambda function places clean files in one buck
     - Install the AWS command line interface (CLI). See [Installing the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) for details.
     - Install GNU Make if you don't want to use the AWS CLI. See [GNU Make](https://www.gnu.org/software/make/) for download information.
 2. **Create two S3 buckets**
-    - Create a 'Promote bucket' to receive clean files.
-    - Create a 'Quarantine bucket' to receive quarantined files.
+    - Create a 'Promote bucket' to receive clean files. Example: `fss-promote`.
+    - Create a 'Quarantine bucket' to receive quarantined files. Example: `fss-quarantine`.
 3. **Create a custom policy**
 
     <details>
@@ -148,10 +148,10 @@ After a scan occurs, this example Lambda function places clean files in one buck
     - Click **Edit** (on the right).
     - Click **Add environment variable**
         - In the **Key** field, enter `PROMOTEBUCKET` 
-        - In the **Value** field, enter `fss-test-promote`
+        - In the **Value** field, enter `<YOUR_PROMOTE_BUCKET>`
     - Again, click **Add environment variable**
         - In the **Key** field, enter `QUARANTINEBUCKET` 
-        - In the **Value** field, enter `fss-test-quarantine`
+        - In the **Value** field, enter `<YOUR_QUARANTINE_BUCKET>` . Example: `fss-quarantine`
     - Click **Save** to save both variables.
 
 </details>
@@ -244,3 +244,41 @@ After a scan occurs, this example Lambda function places clean files in one buck
         - `<YOUR_LAMBDA_FUNCTION_ARN>` is replaced with the Lambda function ARN you found earlier.
     </details>
 
+## Test the Lambda
+To test that the Lambda function was deployed properly, you'll need to generate a malware detection using the [eicar test file](https://secure.eicar.org/eicar.com "A file used for testing anti-malware scanners."), and then check the Quarantine bucket to make sure the `eicar` file was sent there successfully.
+
+1. **Download the Eicar test file**
+   - Temporarily disable your virus scanner or create an exception, otherwise it will catch the `eicar` file and delete it.
+    - Browser: Go to the [eicar file](https://secure.eicar.org/eicar.com) page and download `eicar_com.zip` or any of the other versions of this file.
+    - CLI: curl -O https://secure.eicar.org/eicar_com.zip
+2. **Upload the eicar file to the ScanningBucket**
+
+    <details>
+    <summary>Using the AWS console</summary>
+
+    1. Go to **CloudFormation > Stacks** > your all-in-one stack > your nested storage stack.
+    2. In the main pane, click the **Resources** tab and then click the **ScanningBucket** link. You are redirected to your ScanningBucket in Amazon S3.
+    3. Click **Upload** and upload `eicar_com.zip`. File Storage Security scans the file and detects malware.
+    4. Still in S3, go to your Quarantine bucket and make sure that `eicar.zip` file is present.
+    5. Go back to your ScanningBucket and make sure the `eicar.zip` is no longer there.
+
+📌 It can take 30-60 seconds or more for the 'move' operation to complete, and during this time, you may see the file in both buckets.
+    2. Search for your scanning bucket.
+    3. Click on the **Upload** button. 
+    4. Find the Eicar test file you downloaded and click **Upload**.
+    5. Check your quarantine bucket to see if the Eicar file has moved.
+    **NOTE:** It can take about 30-60 seconds or more for the file to move.
+
+    </details>
+
+    <details>
+    <summary>Using the AWS CLI</summary>
+
+    - Enter the folowing AWS CLI command to upload the Eicar test file to the scanning bucket:
+
+        `aws s3 cp eicar_com.zip s3://<YOUR_SCANNING_BUCKET> `
+    - where:
+        - `<YOUR_SCANNING_BUCKET>` is replaced with the ScanningBucket name.
+
+    **NOTE:** It can take about 30-60 seconds or more for the file to move.
+    </details>
