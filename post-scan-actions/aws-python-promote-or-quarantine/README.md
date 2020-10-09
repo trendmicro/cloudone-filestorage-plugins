@@ -34,7 +34,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
     1. Paste the [JSON code below](#JSON) into a file called `fss-trust-policy.json` (or another name) making sure to replace the variables in the JSON code with your own values. Variables are described following the code. 
     2. In a shell program such as bash or Windows Powershell, enter the following AWS CLI command to create the policy:
 
-        `aws create-policy --policy-name <YOUR_FSS_LAMBDA_POLICY> --policy-document file://fss-trust-policy.json`
+        `aws iam create-policy --policy-name <YOUR_FSS_LAMBDA_POLICY> --policy-document file://fss-trust-policy.json`
 
         where `<YOUR_FSS_LAMBDA_POLICY>` is replaced with the name you want to give to the custom policy. Example: `FSS_Lambda_Policy`.
     3. In the output, take note of the custom policy's ARN. Example: `arn:aws:iam::0123456789012:policy/FSS_Lambda_Policy`
