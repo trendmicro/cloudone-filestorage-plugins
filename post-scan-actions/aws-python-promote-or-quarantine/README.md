@@ -44,33 +44,33 @@ After a scan occurs, this example Lambda function places clean files in one buck
     <summary><a name="JSON">JSON code (for use in the custom policy)</a></summary>
 
     ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
         {
-            "Version": "2012-10-17",
-            "Statement": [
+                "Sid": "CopyFromScanningBucket",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:GetObject",
+                    "s3:DeleteObject",
+                    "s3:GetObjectTagging"
+                ],
+                "Resource": "arn:aws:s3:::<YOUR_BUCKET_TO_SCAN>/*"
+            },
             {
-                    "Sid": "CopyFromScanningBucket",
-                    "Effect": "Allow",
-                    "Action": [
-                        "s3:GetObject",
-                        "s3:DeleteObject",
-                        "s3:GetObjectTagging"
-                    ],
-                    "Resource": "arn:aws:s3:::<YOUR_BUCKET_TO_SCAN>/*"
-                },
-                {
-                    "Sid": "CopyToPromoteOrQuarantineBucket",
-                    "Effect": "Allow",
-                    "Action": [
-                        "s3:PutObject",
-                        "s3:PutObjectTagging"
-                    ],
-                    "Resource": [
-                        "arn:aws:s3:::<YOUR_QUARANTINE_BUCKET>/*",
-                        "arn:aws:s3:::<YOUR_PROMOTE_BUCKET>/*"
-                    ]
-                }
-            ]
-        }   
+                "Sid": "CopyToPromoteOrQuarantineBucket",
+                "Effect": "Allow",
+                "Action": [
+                    "s3:PutObject",
+                    "s3:PutObjectTagging"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::<YOUR_QUARANTINE_BUCKET>/*",
+                    "arn:aws:s3:::<YOUR_PROMOTE_BUCKET>/*"
+                ]
+            }
+        ]
+    }
     ```
     - where:
         - `<YOUR_BUCKET_TO_SCAN>` is replaced with your scanning bucket name. You can find this name in AWS > **CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources > ScanningBucket**. 
