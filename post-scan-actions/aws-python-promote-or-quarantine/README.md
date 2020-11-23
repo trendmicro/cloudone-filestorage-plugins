@@ -24,8 +24,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
     7. On the **Review policy** page:
         - In the **Name** field, enter a name. Example: `FSS_Lambda_Policy`.
         - Click **Create policy**.
-    8. Click the link to your policy to open its summary.
-    9. Take note of the **Policy ARN** near the top of the page.
+    8. Take note of the **Policy Name**.
     </details>
     
     <details>
@@ -73,7 +72,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
     }
     ```
     - where:
-        - `<YOUR_BUCKET_TO_SCAN>` is replaced with your scanning bucket name. You can find this name in AWS > **CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources > ScanningBucket**. 
+        - `<YOUR_BUCKET_TO_SCAN>` is replaced with your scanning bucket name. You can find this name in AWS > **CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Outputs > ScanningBucket**. 
         - `<YOUR_QUARANTINE_BUCKET>` is replaced with your Quarantine bucket name.
         - `<YOUR_PROMOTE_BUCKET>` is replaced with your Promote bucket name.
     </details>
@@ -93,7 +92,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
     5. In the search box:
         - Search for ` AWSLambdaBasicExecutionRole`.
         - Select its check box.
-        - Search for `<YOUR_FSS_LAMBDA_POLICY>` where `<YOUR_FSS_LAMBDA_POLICY>` is the name of your custom File Storage Security policy. Example: `FSS_Lambda_Policy`.
+        - Search for `<YOUR_FSS_LAMBDA_POLICY>` which you created earlier. Example: `FSS_Lambda_Policy`
         - Select its check box in the list.
         - You now have two policies selected.
         - Click **Next: Tags**.
@@ -142,7 +141,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
 2. **Add function code**
     - Download the 'Promote or Quarantine' [handler.py file from GitHub](https://github.com/trendmicro/cloudone-filestorage-plugins/blob/master/post-scan-actions/aws-python-promote-or-quarantine/handler.py).
     - On the AWS console page you left open, in the **Function code** section, remove the sample Lambda function code and paste the code from `handler.py`.
-    - Click **Save** at leave the page open.
+    - Click **Deploy** and leave the page open.
 3. **Add environment variables**
     - Scroll to the **Environment variables** section.
     - Click **Edit** (on the right).
@@ -262,18 +261,12 @@ To test that the Lambda function was deployed properly, you'll need to generate 
     <summary>Using the AWS console</summary>
 
     1. Go to **CloudFormation > Stacks** > your all-in-one stack > your nested storage stack.
-    2. In the main pane, click the **Resources** tab and then click the **ScanningBucket** link. You are redirected to your ScanningBucket in Amazon S3.
+    2. In the main pane, click the **Outputs** tab and then copy the **ScanningBucket** string. Search the string in Amazon S3 console to find your ScanningBucket.
     3. Click **Upload** and upload `eicar_com.zip`. File Storage Security scans the file and detects malware.
     4. Still in S3, go to your Quarantine bucket and make sure that `eicar.zip` file is present.
     5. Go back to your ScanningBucket and make sure the `eicar.zip` is no longer there.
 
-📌 It can take 30-60 seconds or more for the 'move' operation to complete, and during this time, you may see the file in both buckets.
-    2. Search for your scanning bucket.
-    3. Click on the **Upload** button. 
-    4. Find the Eicar test file you downloaded and click **Upload**.
-    5. Check your quarantine bucket to see if the Eicar file has moved.
-    **NOTE:** It can take about 30-60 seconds or more for the file to move.
-
+    📌 It can take 30-60 seconds or more for the 'move' operation to complete, and during this time, you may see the file in both buckets.
     </details>
 
     <details>
