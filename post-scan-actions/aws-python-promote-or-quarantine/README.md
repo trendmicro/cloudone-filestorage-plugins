@@ -242,7 +242,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
 
     - Enter the following AWS CLI command to subscribe your Lamdba function to the SNS topic:
         
-        `aws sns subscribe --topic-arn <SNS_Topic_ARN> --notification-endpoint <YOUR_LAMBDA_FUNCTION_ARN>`
+        `aws sns subscribe --topic-arn <SNS_Topic_ARN> --notification-endpoint <YOUR_LAMBDA_FUNCTION_ARN> --protocol lambda`
     - where:
         - `<SNS_TOPIC_ARN>` is replaced with the SNS topic ARN you found earlier.
         - `<YOUR_LAMBDA_FUNCTION_ARN>` is replaced with the Lambda function ARN you found earlier.
