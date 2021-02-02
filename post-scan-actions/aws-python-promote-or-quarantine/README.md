@@ -14,7 +14,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
 
     <details>
     <summary>Using the AWS console</summary>
-    
+
     1. Go to **Services > IAM**.
     2. On the left, click **Policies**.
     3. In the main pane, click **Create policy**.
@@ -26,11 +26,11 @@ After a scan occurs, this example Lambda function places clean files in one buck
         - Click **Create policy**.
     8. Take note of the **Policy Name**.
     </details>
-    
+
     <details>
     <summary>Using the AWS CLI</summary>
 
-    1. Paste the [JSON code below](#JSON) into a file called `fss-trust-policy.json` (or another name) making sure to replace the variables in the JSON code with your own values. Variables are described following the code. 
+    1. Paste the [JSON code below](#JSON) into a file called `fss-trust-policy.json` (or another name) making sure to replace the variables in the JSON code with your own values. Variables are described following the code.
     2. In a shell program such as bash or Windows Powershell, enter the following AWS CLI command to create the policy:
 
         `aws iam create-policy --policy-name <YOUR_FSS_LAMBDA_POLICY> --policy-document file://fss-trust-policy.json`
@@ -72,13 +72,13 @@ After a scan occurs, this example Lambda function places clean files in one buck
     }
     ```
     - where:
-        - `<YOUR_BUCKET_TO_SCAN>` is replaced with your scanning bucket name. You can find this name in AWS > **CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Outputs > ScanningBucket**. 
+        - `<YOUR_BUCKET_TO_SCAN>` is replaced with your scanning bucket name. You can find this name in AWS > **CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Outputs > ScanningBucket**.
         - `<YOUR_QUARANTINE_BUCKET>` is replaced with your Quarantine bucket name.
         - `<YOUR_PROMOTE_BUCKET>` is replaced with your Promote bucket name.
     </details>
 
 4. **Create an execution role for the Lambda function**
-    
+
     <details>
     <summary>Using the AWS console</summary>
 
@@ -103,24 +103,44 @@ After a scan occurs, this example Lambda function places clean files in one buck
         - Make sure that two policies are listed.
         - Click **Create role**.
     </details>
-    
+
    <details>
    <summary>Using the AWS CLI</summary>
 
-    1. Enter the following AWS CLI command to create the role:
+    1. Paste the [JSON code below](#JSON_trust-doc) into a file called `trust.json` (or another name).
+    2. Enter the following AWS CLI command to create the role:
 
-        `aws iam create-role --role-name <YOUR_FSS_LAMBDA_ROLE>`
+        `aws iam create-role --role-name <YOUR_FSS_LAMBDA_ROLE> --assume-role-policy-document file://trust.json`
 
         where `<YOUR_FSS_LAMBDA_ROLE>` is replaced with the name you want to give to the role. Example: `FSS_Lambda_Role`.
-    2. Attach the `AWSLambdaBasicExecutionRole` managed policy to the role:
+    3. Attach the `AWSLambdaBasicExecutionRole` managed policy to the role:
 
         `aws iam attach-role-policy --role-name FSS_Lambda_Role --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole`
 
-    3. Attach the custom policy to the role:
+    4. Attach the custom policy to the role:
 
         `aws iam attach-role-policy --role-name FSS_Lambda_Role --policy-arn <YOUR_FSS_LAMBDA_POLICY_ARN>`
 
         where `<YOUR_FSS_POLICY_ARN>` is replaced with the File Storage Security custom policy's ARN that you noted earlier. Example: `arn:aws:iam::0123456789012:policy/FSS_Lambda_Policy`.
+    </details>
+
+    <details>
+    <summary><a name="JSON_trust-doc">JSON code (for use in the trust document)</a></summary>
+
+    ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "lambda.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+            }
+        ]
+    }
+    ```
     </details>
 
 ## Deploy the Lambda
@@ -146,10 +166,10 @@ After a scan occurs, this example Lambda function places clean files in one buck
     - Scroll to the **Environment variables** section.
     - Click **Edit** (on the right).
     - Click **Add environment variable**
-        - In the **Key** field, enter `PROMOTEBUCKET` 
+        - In the **Key** field, enter `PROMOTEBUCKET`
         - In the **Value** field, enter `<YOUR_PROMOTE_BUCKET>`
     - Again, click **Add environment variable**
-        - In the **Key** field, enter `QUARANTINEBUCKET` 
+        - In the **Key** field, enter `QUARANTINEBUCKET`
         - In the **Value** field, enter `<YOUR_QUARANTINE_BUCKET>` . Example: `fss-quarantine`
     - Click **Save** to save both variables.
 4. **Adjust timeout**
@@ -210,12 +230,12 @@ After a scan occurs, this example Lambda function places clean files in one buck
 
 ## Subscribe the Lambda to the SNS topic
 
-1. **Find the 'ScanResultTopic' SNS topic ARN** 
+1. **Find the 'ScanResultTopic' SNS topic ARN**
     - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources**.
-    - Scroll down to locate the  **ScanResultTopic** Logical ID. 
+    - Scroll down to locate the  **ScanResultTopic** Logical ID.
     - Copy the **ScanResultTopic** ARN to a temporary location. Example: `arn:aws:sns:us-east-1:123445678901:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
 2. **Find the Lambda function ARN**
-    
+
     📌 The Lamdba function ARN is only required if you plan to use the AWS CLI (as opposed to the console) to subscribe the Lambda to the SNS topic.
     - In the AWS console, go to **Services > Lambda**.
     - Search for the Lambda function you created previously. Example: `FSS_Prom_Quar_Lambda`
@@ -240,8 +260,16 @@ After a scan occurs, this example Lambda function places clean files in one buck
     <details>
     <summary>Using the AWS CLI</summary>
 
+    - Grant the Lambda function permissions to attach a trigger via AWS CLI command:
+
+        ```bash
+        aws lambda add-permission --function-name <YOUR_FSS_FUNC_NAME> \
+        --source-arn <SNS_TOPIC_ARN> \
+        --statement-id <YOUR_FSS_FUNC_NAME> --action "lambda:InvokeFunction" \
+        --principal sns.amazonaws.com
+        ```
     - Enter the following AWS CLI command to subscribe your Lamdba function to the SNS topic:
-        
+
         `aws sns subscribe --topic-arn <SNS_Topic_ARN> --notification-endpoint <YOUR_LAMBDA_FUNCTION_ARN> --protocol lambda`
     - where:
         - `<SNS_TOPIC_ARN>` is replaced with the SNS topic ARN you found earlier.
