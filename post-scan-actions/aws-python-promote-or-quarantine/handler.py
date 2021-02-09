@@ -1,12 +1,38 @@
-import json
 import os
-import boto3
-from botocore.exceptions import ClientError
-import urllib.parse
 import re
+import json
 import time
+import urllib.parse
 
+import boto3
+
+valid_acl = {
+    'private',
+    'public-read',
+    'public-read-write',
+    'authenticated-read',
+    'aws-exec-read',
+    'bucket-owner-read',
+    'bucket-owner-full-control',
+}
+
+modes = {
+    'move',
+    'copy',
+}
+
+default_mode = 'move'
 s3_domain_pattern = 's3(\..+)?\.amazonaws.com'
+
+def get_mode_from_env(mode_key):
+    mode = os.environ.get(mode_key, 'move').lower()
+    return mode if mode in modes else default_mode
+
+def get_promote_mode():
+    return get_mode_from_env('PROMOTEMODE')
+
+def get_quarantine_mode():
+    return get_mode_from_env('QUARANTINEMODE')
 
 def parse_s3_object_url(url_string):
     url = urllib.parse.urlparse(url_string)
@@ -21,13 +47,19 @@ def parse_s3_object_url(url_string):
 
     return bucket, object_key
 
-def copy_object(source_bucket, source_key, dest_bucket,dest_key ):
+def copy_object(source_bucket, source_key, dest_bucket, dest_key, acl=None):
     s3 = boto3.client('s3')
-    s3.copy_object(
-        Bucket=dest_bucket, 
-        CopySource={'Bucket': source_bucket, 'Key':source_key},
-        Key=dest_key
-    )
+
+    params = {
+        'Bucket': dest_bucket,
+        'CopySource': {'Bucket': source_bucket, 'Key': source_key},
+        'Key': dest_key,
+    }
+
+    if acl and acl in valid_acl:
+        params['ACL'] = acl
+
+    s3.copy_object(**params)
 
 def delete_objects(bucket, prefix, objects):
     s3 = boto3.client('s3')
@@ -35,8 +67,14 @@ def delete_objects(bucket, prefix, objects):
     s3.delete_objects(Bucket=bucket, Delete=objects)
 
 def lambda_handler(event, context):
-    quarantine_bucket = os.environ['QUARANTINEBUCKET']
-    promote_bucket = os.environ['PROMOTEBUCKET']
+    acl = os.environ.get('ACL')
+
+    quarantine_bucket = os.environ.get('QUARANTINEBUCKET')
+    promote_bucket = os.environ.get('PROMOTEBUCKET')
+
+    promote_mode = get_promote_mode()
+    quarantine_mode = get_quarantine_mode()
+
     time.sleep(15)
     for record in event['Records']:
         message = json.loads(record['Sns']['Message'])
@@ -48,11 +86,23 @@ def lambda_handler(event, context):
 
         findings = message['scanning_result'].get('Findings')
 
-        if not findings:
-            copy_object(source_bucket=src_bucket, dest_bucket=promote_bucket, source_key=object_key, dest_key=object_key)
+        operation = 'quarantine' if findings else 'promotion'
+        mode = quarantine_mode if findings else promote_mode
+        dst_bucket = quarantine_bucket if findings else promote_bucket
+
+        if not dst_bucket:
+            print(f'Skip: No bucket specified for {operation}')
+            continue
+
+        copy_object(
+            source_bucket=src_bucket,
+            dest_bucket=dst_bucket,
+            source_key=object_key,
+            dest_key=object_key,
+            acl=acl,
+        )
+
+        if mode == 'move':
             delete_objects(bucket=src_bucket, prefix='', objects=[object_key])
-            print('Promoted file successfully')
-        else:
-            copy_object(source_bucket=src_bucket, dest_bucket=quarantine_bucket, source_key=object_key, dest_key=object_key)
-            delete_objects(bucket=src_bucket, prefix='', objects=[object_key])
-            print('Quarantined file successfully')
+
+        print(f'File {operation} successful (mode: {mode})')

@@ -61,7 +61,8 @@ After a scan occurs, this example Lambda function places clean files in one buck
                 "Effect": "Allow",
                 "Action": [
                     "s3:PutObject",
-                    "s3:PutObjectTagging"
+                    "s3:PutObjectTagging",
+                    "s3:PutObjectAcl"
                 ],
                 "Resource": [
                     "arn:aws:s3:::<YOUR_QUARANTINE_BUCKET>/*",
@@ -308,3 +309,14 @@ To test that the Lambda function was deployed properly, you'll need to generate 
 
     **NOTE:** It can take about 30-60 seconds or more for the file to move.
     </details>
+
+## Optional Configuration
+Additional options are supported as described in the following section.
+
+- **Skip promotion/quarantine**
+    - If you wish to _only_ promote or _only_ quarantine, remove the environment variable corresponding to the action you want to ignore. For example to skip quarantine and promote only, remove the `QUARANTINEBUCKET` environment variable from the scanner Lambda configuration.
+- **Custom ACL (Access Control List)**
+    - An access control list (ACL) [defines which AWS accounts or groups are granted access and the type of access](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl_overview.html).
+    - You can set a specific object ACL for promoted/quarantined objects. For example, if your source bucket has restricted permissions and you wish to grant wider access to promoted/quarantined objects, set the `ACL` environment variable in the scanner Lambda configuration, i.e., the value `bucket-owner-full-control` grants the promote/quarantine bucket access to the object as if it were there own.
+- **Change default promotion/quarantine behaviour**
+    - By default when an object is promoted or quarantined, it is _moved_ from the source bucket into either one of `PROMOTEBUCKET` or `QUARANTINEBUCKET`. That is, it's removed from the scanned bucket and copied to the destination bucket. If, for example, you wish to instead perform a _copy_ on promotion (i.e., pseudo object replication-like behaviour) then set the `PROMOTEMODE` environment variable in the scanner Lambda configuration to `copy` (default: `move`). Likewise, you _could_ do the same for quarantine by setting the `QUARANTINEMODE` variable to `copy` (though strongly **not** recommended).
