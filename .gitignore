@@ -1,1 +1,6 @@
+
+# artifacts
 zip/
+
+# python
+.venv
