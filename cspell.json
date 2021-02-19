@@ -10,7 +10,8 @@
   "words": [
     "boto",
     "botocore",
-    "eicar"
+    "eicar",
+    "Spdx"
   ],
   "ignoreWords": [
     "fileb"
