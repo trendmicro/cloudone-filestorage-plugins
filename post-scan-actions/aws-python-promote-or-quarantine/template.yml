@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: cloudone-filestorage-plugin-action-promote-or-quarantine
+    Description: >-
+      After a scan occurs, this example application places clean files in one bucket
+      and malicious files in another.
+    Author: Trend Micro Cloud One File Storage Security
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: ../../LICENSE
+    ReadmeUrl: README.md
+    Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
+    HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
+    SemanticVersion: 1.0.0
+    SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
+
+Parameters:
+  ScanningBucketName:
+    Type: String
+    AllowedPattern: ^[0-9a-z]+([0-9a-z-]*[0-9a-z])*$
+    ConstraintDescription: S3 bucket name can include numbers, lowercase letters,
+      and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: The S3 bucket scanned by Trend Micro Cloud One File Storage Security.
+  ScanResultTopicARN:
+    Type: String
+    Description: The ARN of the scan result SNS topic in storage stack.
+  PromoteBucketName:
+    Type: String
+    Description: |
+      [Optional] The bucket name to promote files without malicious finding.
+      Leaving it blank to disable the promote capability.
+  PromoteMode:
+    Type: String
+    AllowedValues:
+      - move
+      - copy
+    Default: move
+    Description: How files got promoted.
+  QuarantineBucketName:
+    Type: String
+    Description: |
+      [Optional] The bucket name to quarantine malicious files.
+      Leaving it blank to disable the quarantine capability.
+  QuarantineMode:
+    Type: String
+    AllowedValues:
+      - move
+      - copy
+    Default: move
+    Description: How files got quarantined.
+  ACL:
+    Type: String
+    AllowedValues:
+      - ''
+      - 'private'
+      - 'public-read'
+      - 'public-read-write'
+      - 'authenticated-read'
+      - 'aws-exec-read'
+      - 'bucket-owner-read'
+      - 'bucket-owner-full-control'
+    Default: ''
+    Description: |
+      [Optional] Put ACL on the file after it's promoted/quarantined.
+
+Conditions:
+  PromoteEnabled:
+    !Not [!Equals [!Ref PromoteBucketName, '']]
+  QuarantineEnabled:
+    !Not [!Equals [!Ref QuarantineBucketName, '']]
+  PutACL:
+    !Not [!Equals [!Ref ACL, '']]
+
+Resources:
+  PromoteOrQuarantineLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: handler.lambda_handler
+      Runtime: python3.8
+      MemorySize: 512
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          PROMOTEBUCKET: !Ref PromoteBucketName
+          PROMOTEMODE: !Ref PromoteMode
+          QUARANTINEBUCKET: !Ref QuarantineBucketName
+          QUARANTINEMODE: !Ref QuarantineMode
+          ACL: !Ref ACL
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:DeleteObject
+              - s3:GetObjectTagging
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${ScanningBucketName}/*
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PutObjectTagging
+              - !If
+                - PutACL
+                - s3:PutObjectAcl
+                - !Ref AWS::NoValue
+            Resource:
+              - !If
+                - PromoteEnabled
+                - !Sub arn:${AWS::Partition}:s3:::${PromoteBucketName}/*
+                - !Ref AWS::NoValue
+              - !If
+                - QuarantineEnabled
+                - !Sub arn:${AWS::Partition}:s3:::${QuarantineBucketName}/*
+                - !Ref AWS::NoValue
+      Events:
+        ScanResult:
+          Type: SNS
+          Properties:
+            Topic: !Ref ScanResultTopicARN
