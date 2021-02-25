@@ -29,27 +29,29 @@ Parameters:
   PromoteBucketName:
     Type: String
     Description: |
-      [Optional] The bucket name to promote files without malicious finding.
-      Leaving it blank to disable the promote capability.
+      [Optional] The bucket name used to promote files without malicious intent.
+      Leave the bucket name blank to disable promoting.
   PromoteMode:
     Type: String
     AllowedValues:
       - move
       - copy
     Default: move
-    Description: How files got promoted.
+    Description: The method by which files were promoted.
   QuarantineBucketName:
     Type: String
     Description: |
       [Optional] The bucket name to quarantine malicious files.
-      Leaving it blank to disable the quarantine capability.
+      Leave the bucket name blank to disable quarantining
   QuarantineMode:
     Type: String
     AllowedValues:
       - move
       - copy
     Default: move
-    Description: How files got quarantined.
+    Description: The method by which files were quarantined.
+
+
   ACL:
     Type: String
     AllowedValues:
@@ -63,7 +65,7 @@ Parameters:
       - 'bucket-owner-full-control'
     Default: ''
     Description: |
-      [Optional] Put ACL on the file after it's promoted/quarantined.
+      [Optional] Apply an access control list (ACL) on the file after it has been promoted or quarantined.
 
 Conditions:
   PromoteEnabled:
