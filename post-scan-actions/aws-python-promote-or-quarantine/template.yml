@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.0.1
+    SemanticVersion: 1.0.2
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
@@ -38,7 +38,9 @@ Parameters:
       - move
       - copy
     Default: move
-    Description: The method by which files were promoted.
+    Description: |
+      The method by which files were promoted.
+      (Options: move, copy)
   QuarantineBucketName:
     Type: String
     Default: ''
@@ -51,9 +53,9 @@ Parameters:
       - move
       - copy
     Default: move
-    Description: The method by which files were quarantined.
-
-
+    Description: |
+      The method by which files were quarantined.
+      (Options: move, copy)
   ACL:
     Type: String
     AllowedValues:
@@ -68,6 +70,7 @@ Parameters:
     Default: ''
     Description: |
       [Optional] Apply an access control list (ACL) on the file after it has been promoted or quarantined.
+      (Options: private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control)
 
 Conditions:
   PromoteEnabled:
