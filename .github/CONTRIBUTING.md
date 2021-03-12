@@ -6,4 +6,4 @@
 
 - Fork this repository.
 - Commit your code with a message that is structured according to the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0-beta.2/) specification.
-- Submit a PR and request a review from @trendmicro/cloud-one-file-storage-security.
+- Submit a PR with the information requested in PR template.
