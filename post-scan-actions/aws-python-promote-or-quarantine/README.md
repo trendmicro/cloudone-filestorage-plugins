@@ -7,9 +7,9 @@ After a scan occurs, this example Lambda function places clean files in one buck
 1. **Create S3 buckets**
     - Create a 'Promote bucket' to receive clean files. Example: `fss-promote`.
     - Create a 'Quarantine bucket' to receive quarantined files. Example: `fss-quarantine`.
-2. **Find the 'ScanResultTopic' SNS topic ARN**
-    - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources**.
-    - Scroll down to locate the  **ScanResultTopic** Logical ID.
+2. **Find the 'ScanResultTopicARN' SNS topic ARN**
+    - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Outputs**  or **Services > CloudFormation** > your storage stack > **Outputs**.
+    - Scroll down to locate the  **ScanResultTopicARN** Key.
     - Copy the **ScanResultTopic** ARN to a temporary location. Example: `arn:aws:sns:us-east-1:123445678901:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
 
 ## Installation
