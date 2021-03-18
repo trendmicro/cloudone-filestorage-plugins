@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: cloudone-filestorage-plugin-action-conformity-custom-check
+    Description: >-
+      After a scan occurs, this example application places pushes an alert to Cloud One Conformity using Custom Checks.
+    Author: Trend Micro Cloud One File Storage Security
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: ../../LICENSE
+    ReadmeUrl: README.md
+    Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, conformity, customcheck]
+    HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
+    SemanticVersion: 1.0.0
+    SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-conformity-custom-check
+
+Parameters:
+  SNSTopicArn:
+    Type: String
+    Description: ARN of the File Storage SNS Topic to subscribe this function.
+  ConformityRegion:
+    Type: String
+    Description: Region where you conformity account is hosted. (us-west-2 for Cloud One customers)
+    Default: us-west-2
+    AllowedValues:
+      - us-west-2
+      - ap-southeast-2
+      - eu-west-1
+  ConformityApiKey:
+    Type: String
+    NoEcho: true
+    Description: Enter your Conformity API Key. (https://www.cloudconformity.com/help/public-api/api-keys.html)
+  ConformityCustomCheckId:
+    Type: String
+    Description: Enter the custom check ID number to track FSS findings as in Conformity. (Allowed values CUSTOM-{001-999})
+    Default: CUSTOM-001
+    AllowedPattern: CUSTOM-(?=.*[1-9])\d{3}?$
+  ConformityCheckSeverity:
+    Type: String
+    Description: Please enter the severity level to track FSS findings as in Conformity.
+    Default: VERY_HIGH
+    AllowedValues:
+      - LOW
+      - MEDIUM
+      - HIGH
+      - VERY_HIGH
+      - EXTREME
+
+Resources:
+  FSStoConformityChecksSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: Conformity API Key Secret
+      SecretString: !Sub '{"ccapikey":"${ConformityApiKey}"}'
+
+  FSStoConformityChecksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: handler.lambda_handler
+      Runtime: python3.8
+      MemorySize: 128
+      Timeout: 30
+      Tracing: Active
+      Environment:
+        Variables:
+          CC_REGION: !Ref ConformityRegion
+          CC_API_SECRETS_ARN: !Ref FSStoConformityChecksSecret
+          CC_CUSTOMCHECKID: !Ref ConformityCustomCheckId
+          CC_CHECKSEV: !Ref ConformityCheckSeverity
+      Policies:
+        - Statement:
+            - Sid: GetSecretValue
+              Effect: Allow
+              Action:
+                - secretsmanager:GetSecretValue
+              Resource: !Ref FSStoConformityChecksSecret
+      Events:
+        ScanResult:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSTopicArn
