@@ -1,0 +1,18 @@
+{
+  "name": "securityhub-integration",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "zip": "bestzip bundle.zip *",
+    "package": "npm install && npm run zip"
+  },
+  "author": "Raphael Bottino <raphabot@gmail.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "uuid": "^8.3.1"
+  },
+  "devDependencies": {
+    "bestzip": "^2.1.7"
+  }
+}
