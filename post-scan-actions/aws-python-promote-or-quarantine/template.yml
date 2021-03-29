@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.0.0
+    SemanticVersion: 1.0.2
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
@@ -28,28 +28,34 @@ Parameters:
     Description: The ARN of the scan result SNS topic in storage stack.
   PromoteBucketName:
     Type: String
+    Default: ''
     Description: |
-      [Optional] The bucket name to promote files without malicious finding.
-      Leaving it blank to disable the promote capability.
+      [Optional] The bucket name used to promote files without malicious intent.
+      Leave the bucket name blank to disable promoting.
   PromoteMode:
     Type: String
     AllowedValues:
       - move
       - copy
     Default: move
-    Description: How files got promoted.
+    Description: |
+      The method by which files were promoted.
+      (Options: move, copy)
   QuarantineBucketName:
     Type: String
+    Default: ''
     Description: |
       [Optional] The bucket name to quarantine malicious files.
-      Leaving it blank to disable the quarantine capability.
+      Leave the bucket name blank to disable quarantining
   QuarantineMode:
     Type: String
     AllowedValues:
       - move
       - copy
     Default: move
-    Description: How files got quarantined.
+    Description: |
+      The method by which files were quarantined.
+      (Options: move, copy)
   ACL:
     Type: String
     AllowedValues:
@@ -63,7 +69,8 @@ Parameters:
       - 'bucket-owner-full-control'
     Default: ''
     Description: |
-      [Optional] Put ACL on the file after it's promoted/quarantined.
+      [Optional] Apply an access control list (ACL) on the file after it has been promoted or quarantined.
+      (Options: private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control)
 
 Conditions:
   PromoteEnabled:
