@@ -1,6 +1,7 @@
 import urllib3
 import json
 import os
+http = urllib3.PoolManager()
 
 def lambda_handler(event, context):
 
