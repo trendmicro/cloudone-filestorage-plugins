@@ -27,8 +27,11 @@ def get_cc_accountid(awsaccountid):
     r = http.request("GET", accountsapi, headers=headers)
     accounts = json.loads(r.data.decode("utf-8"))["data"]
     for account in accounts:
-        if account["attributes"]["awsaccount-id"] == awsaccountid:
-            return account["id"]
+        try:
+            if account["attributes"]["awsaccount-id"] == awsaccountid:
+                return account["id"]
+        except:
+            pass
 
 
 def lambda_handler(event, context):

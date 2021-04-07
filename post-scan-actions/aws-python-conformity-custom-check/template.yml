@@ -12,7 +12,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, conformity, customcheck]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.0.0
+    SemanticVersion: 1.0.1
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-conformity-custom-check
 
 Parameters:
