@@ -81,7 +81,7 @@ def lambda_handler(event, context):
         print(json.dumps(message))
 
         if message['scanner_status'] != 0:
-            print(f'Skip: {message['scanner_status_message']}')
+            print('Skip: ', message['scanner_status_message'])
             continue
 
         src_bucket, object_key = parse_s3_object_url(message['file_url'])
