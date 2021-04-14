@@ -80,6 +80,10 @@ def lambda_handler(event, context):
         message = json.loads(record['Sns']['Message'])
         print(json.dumps(message))
 
+        if message['scanner_status'] != 0:
+            print(f'Skip: {message['scanner_status_message']}')
+            continue
+
         src_bucket, object_key = parse_s3_object_url(message['file_url'])
         print('Source Bucket: ', src_bucket)
         print('Object Key: ', object_key)
