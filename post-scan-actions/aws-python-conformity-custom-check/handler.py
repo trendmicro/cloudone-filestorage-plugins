@@ -1,8 +1,9 @@
 import boto3
 import json
 import os
+import re
+import urllib.parse
 import urllib3
-
 # import datetime
 
 http = urllib3.PoolManager()
@@ -52,12 +53,20 @@ def lambda_handler(event, context):
             ccaccountid = get_cc_accountid(account_id)
 
             # Get the bucket & object details
-            bucketname = message["file_url"].split(".s3.amazonaws.com/")[0][8:]
-            fileprefix = message["file_url"].split(".s3.amazonaws.com/")[1]
-            filename = message["file_url"].split("/")[-1]
-            s3uri = f"s3://{bucketname}/{fileprefix}"
-            s3arn = f"arn:aws:s3:::{bucketname}/{fileprefix}"
-            s3consoleurl = f"https://s3.console.aws.amazon.com/s3/buckets/{bucketname}?region={aws_region}&prefix={fileprefix}"
+            s3_domain_pattern = "s3(\..+)?\.amazonaws.com"
+            url = urllib.parse.urlparse(message["file_url"])
+            # check pre-signed URL type, path or virtual
+            if re.fullmatch(s3_domain_pattern, url.netloc):
+                bucketname = url.path.split("/")[1]
+                s3_object = "/".join(url.path.split("/")[2:])
+            else:
+                bucketname = url.netloc.split(".")[0]
+                s3_object = url.path[1:]
+            object_key = urllib.parse.unquote_plus(s3_object)
+            object_keyshort = object_key.split("/")[-1]
+            s3uri = f"s3://{bucketname}/{object_key}"
+            s3arn = f"arn:aws:s3:::{bucketname}/{object_key}"
+            s3consoleurl = f"https://s3.console.aws.amazon.com/s3/buckets/{bucketname}?region={aws_region}&prefix={object_key}"
 
             # Generate TTL to expire message (not currently supported by conformity custom checks api - coming soon?)
             # timenow = datetime.datetime.now()
@@ -76,7 +85,7 @@ def lambda_handler(event, context):
                             "type": "checks",
                             "attributes": {
                                 "rule-title": "C1 File Storage Security - Malware Detected",
-                                "message": f"Object {filename} in bucket {bucketname} contains malware",
+                                "message": f"Object {object_keyshort} in bucket {bucketname} contains malware",
                                 "not-scored": False,
                                 "region": aws_region,
                                 "resource": s3uri.replace("/", ":"),
