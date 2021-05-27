@@ -65,17 +65,20 @@ def get_existing_tag_set(bucket_name, object_key):
 
 def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, acl=None):
     params = {
-        'Bucket': dest_bucket,
-        'CopySource': {'Bucket': source_bucket, 'Key': source_key},
-        'Key': dest_key,
         'TaggingDirective': 'REPLACE',
         'Tagging': '&'.join(tags),
+
+    }
+
+    copy_source = {
+        'Bucket': source_bucket,
+        'Key': source_key
     }
 
     if acl and acl in valid_acl:
         params['ACL'] = acl
 
-    s3.copy_object(**params)
+    s3.copy(copy_source, dest_bucket, dest_key, params)
 
 def delete_objects(bucket, prefix, objects):
     objects = {'Objects': [{'Key': prefix + o} for o in objects]}
