@@ -24,7 +24,7 @@ Resources:
       Tracing: Active
       Environment:
         Variables:
-          AWSACCOUNTNO: !Ref AWSACCOUNTNO
+          ACCOUNT_ID: !Ref AWSACCOUNTNO
           SECURITY_HUB_ARN: !Ref AWSSecurityHubARN
           
       Events:
