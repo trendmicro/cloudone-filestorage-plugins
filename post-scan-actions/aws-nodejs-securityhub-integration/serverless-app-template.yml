@@ -26,6 +26,13 @@ Resources:
         Variables:
           ACCOUNT_ID: !Ref AWSACCOUNTNO
           SECURITY_HUB_ARN: !Ref AWSSecurityHubARN
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - securityhub:*
+            Resource:
+              - !Ref AWSSecurityHubARN
           
       Events:
         ScanResult:
