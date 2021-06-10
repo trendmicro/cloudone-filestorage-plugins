@@ -1,6 +1,6 @@
 # Automation using Lambda to Deploy FSS- Storage Stack 
 
-Automated process to deploy an FSS storage stack on each new S3 bucket using Lambda. The storage stack will be linked to the scanner stack previously defined.
+Automated process to deploy an FSS storage stack on each new S3 bucket using Lambda. The storage stack will be linked to the scanner stack previously defined. When the S3 bucket is deleted, the associated FSS Storage stack will be removed.
 
 ![architecture](architecture.png)
 
@@ -17,7 +17,7 @@ Automated process to deploy an FSS storage stack on each new S3 bucket using Lam
     - Click **Create New Stack**
       - Prerequisites: `template is ready`
       - Specify Template: `upload from file`
-      - Select: **[storage_stack.yaml](https://github.com/trendmicro/cloudone-filestorage-plugins/blob/master/deployment/aws-python-storage-stack-automation/storage_stack.yaml)**
+      - Select: **[storage_stack_lifecycle.yaml](https://github.com/trendmicro/cloudone-filestorage-plugins/blob/master/deployment/aws-python-storage-stack-automation/storage_stack_lifecycle.yaml)**
       - Click **Next**
       - StackName: `Enter name for stack`
       - C1WSAPI: [Cloud One Workload Security API Key](https://cloudone.trendmicro.com/docs/file-storage-security/api-create-stack/#Prerequisite)
