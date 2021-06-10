@@ -1,15 +1,15 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: "Automatically deploy File Storage Security - Storage stack to every new S3 bucket created and register it to the defined Scanner Stack."
+Description: "FSS Bucket Lifecycle Automation Stack. Deploy FSS Storage to each new S3 bucket. When the S3 Bucket is deleted, the FSS stack is removed, if monitored."
 Metadata:
   License: MIT-License
   Version: 1.2
 Resources:
-  apiparameter:
+  wsapi:
     Type: AWS::SecretsManager::Secret
     Properties: 
       Description: C1 WS API KEY
       SecretString: !Sub '{"wsapikey":"${C1WSAPI}"}'
-  lambdarole:
+  storagelambdarole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -21,11 +21,11 @@ Resources:
                 - lambda.amazonaws.com
             Action:
               - sts:AssumeRole
-      RoleName: !Ref AWS::StackName
-  lambdarolepolicy:
+      RoleName: !Join ["-",[!Ref AWS::StackName, !Ref AWS::Region,"storage"]]
+  storagelambdarolepolicy:
     Type: "AWS::IAM::Policy"
     Properties:
-      PolicyName: !Ref lambdarole
+      PolicyName: !Ref storagelambdarole
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -121,9 +121,9 @@ Resources:
           - Effect: Allow
             Action:
               - "secretsmanager:GetSecretValue"     
-            Resource: !Ref apiparameter
+            Resource: !Ref wsapi
       Roles:
-        - !Ref lambdarole
+        - !Ref storagelambdarole
   storagelambda:
     Type: AWS::Lambda::Function
     Properties:
@@ -131,7 +131,7 @@ Resources:
       Timeout: 500
       Handler: index.lambda_handler
       Role: !GetAtt
-        - lambdarole
+        - storagelambdarole
         - Arn
       Code:
         ZipFile: |
@@ -323,7 +323,7 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          WS_API: !Ref apiparameter
+          WS_API: !Ref wsapi
           SCANNER_SQS_NAME: !Ref SQSURL
           SCANNER_STACK_NAME: !Ref StackName
   eventbridgeevent:
@@ -351,6 +351,243 @@ Resources:
       Principal: events.amazonaws.com
       SourceArn: !GetAtt
         - eventbridgeevent
+        - Arn
+  removelambdarole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      RoleName: !Join ["-",[!Ref AWS::StackName, !Ref AWS::Region,"removestorage"]]
+  removelambdarolepolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: !Ref removelambdarole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "logs:DescribeLogGroups"
+              - "logs:DeleteLogGroup"
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+              - "logs:PutRetentionPolicy"  
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "iam:DeletePolicy"
+              - "iam:PassRole"
+              - "iam:DetachRolePolicy"
+              - "iam:GetRole"
+              - "iam:GetRolePolicy"
+              - "iam:DeleteRole"
+              - "iam:DeleteRolePolicy"  
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "cloudformation:ListExports"
+              - "cloudformation:ListStackInstances"
+              - "cloudformation:DescribeStackResource"
+              - "cloudformation:ListStackResources"
+              - "cloudformation:DescribeStackEvents"
+              - "cloudformation:DescribeStackInstance"
+              - "cloudformation:GetTemplateSummary"
+              - "cloudformation:DescribeStacks"
+              - "cloudformation:GetTemplate"
+              - "cloudformation:DeleteStack"
+              - "cloudformation:ListStacks"  
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "sqs:ListQueues"
+              - "sqs:GetQueueUrl"
+              - "sqs:ListQueueTags"
+              - "sqs:ReceiveMessage"
+              - "sqs:DeleteMessage"
+              - "sqs:RemovePermission"
+              - "sqs:GetQueueAttributes"
+              - "sqs:ListDeadLetterSourceQueues"
+              - "sqs:DeleteQueue"  
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "s3:*"
+              - "sns:Unsubscribe"
+              - "sns:SetTopicAttributes"
+              - "sns:GetTopicAttributes"
+              - "sns:RemovePermission"
+              - "sns:DeleteTopic"  
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "lambda:DeleteFunction"
+              - "lambda:InvokeFunction"
+              - "lambda:GetEventSourceMapping"
+              - "lambda:GetFunction"
+              - "lambda:RemovePermission"  
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "secretsmanager:GetSecretValue"  
+            Resource: !Ref wsapi
+          - Effect: Allow
+            Action:
+              - "sts:AssumeRole"
+
+            Resource: !GetAtt
+              - removestoragelambda
+              - Arn
+      Roles:
+        - !Ref removelambdarole
+  removestoragelambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.8
+      Timeout: 120
+      Handler: index.lambda_handler
+      Role: !GetAtt
+        - removelambdarole
+        - Arn
+      Code:
+        ZipFile: |
+          import json
+          import os
+          import boto3
+          import urllib3
+          from botocore.exceptions import ClientError
+          http = urllib3.PoolManager()
+
+          fss_key = os.environ["WS_API"]
+          ext_id_url = "https://cloudone.trendmicro.com/api/filestorage/external-id"
+          stacks_url = "https://cloudone.trendmicro.com/api/filestorage/stacks"
+          delete_url = "https://cloudone.trendmicro.com/api/filestorage/stacks/"
+
+          def lambda_handler(event, context):
+              # get secret
+              secrets = boto3.client('secretsmanager').get_secret_value(SecretId=fss_key)
+              sm_data = json.loads(secrets["SecretString"])
+              ws_key = sm_data["wsapikey"]
+
+              #gather bucket name from event
+              bucket_name = event['detail']['requestParameters']['bucketName']
+              print("S3 Bucket: " + bucket_name)
+                
+              # gather cloud one ext id
+              r = http.request(
+                  "GET",
+                  ext_id_url,
+                  headers={
+                      "api-secret-key": ws_key,
+                      "Api-Version": "v1",
+                    },
+                )
+              ext = json.loads(r.data.decode("utf-8"))
+              ext_id = ext["externalID"]
+              print("CloudOne ExtID: " + ext_id)
+                
+              # gather aws account ID
+              account_id = event["account"]
+              print("AWS account ID: " + account_id)
+
+              #gather stack id
+              has_next_value = False
+              next = ""
+              #default limit is 25
+              q_params = {
+                  "provider": "aws",
+                  "status": "ok",
+                  "type": "storage"
+                }  
+              id_call = http.request('GET', stacks_url, q_params, headers = {'api-secret-key': ws_key, 'Api-Version': 'v1'})
+              try:
+                  id_resp = json.loads(id_call.data.decode('utf-8'))
+              except json.decoder.JSONDecodeError:
+                  time.sleep(1)
+                  id_resp = json.loads(id_call.data.decode('utf-8'))
+              for data in id_resp['stacks']:
+                  if 'storage' in data and data['storage'] is not None:
+                      if bucket_name == data['storage']:
+                          stack_name = data['name']
+                          stack_id = data['stackID']
+                          print(stack_name)
+                          print(stack_id)
+                          stack_removal(ws_key, stack_id,stack_name)
+              if "next" in id_resp:
+                  has_next_value = True
+                  next = id_resp['next']
+              while has_next_value:
+                  #next call
+                  q_params = {
+                      "provider": "aws",
+                      "status": "ok",
+                      "type": "storage",
+                      "cursor": next
+                    }
+                  id_call = http.request('GET', stacks_url, q_params, headers = {'api-secret-key': ws_key, 'Api-Version': 'v1'})
+                  try:
+                      id_resp = json.loads(id_call.data.decode('utf-8'))
+                  except:
+                      time.sleep(1)
+                      id_resp = json.loads(id_call.data.decode('utf-8'))
+                  for data in id_resp['stacks']:
+                      if 'storage' in data and data['storage'] is not None:
+                          if bucket_name == data['storage']:
+                              stack_name = data['name']
+                              stack_id = data['stackID']
+                              print(stack_name)
+                              print(stack_id)
+                              stack_removal(ws_key, stack_id, stack_name)
+                              has_next_value = False
+                  if "next" in id_resp:
+                      next = id_resp['next']
+                  else:
+                      has_next_value = False
+
+          def stack_removal(ws_key, stack_id, stack_name):
+              #delete cft stack
+              cft_client = boto3.client("cloudformation")
+              response = cft_client.delete_stack(StackName=stack_name)
+              #delete stack from c1-fss
+              id_call = http.request('DELETE', delete_url+stack_id, headers = {'api-secret-key': ws_key, 'Api-Version': 'v1'})
+      TracingConfig:
+        Mode: Active
+      MemorySize: 128
+      Environment:
+        Variables:
+          WS_API: !Ref wsapi
+  removeeventbridgeevent:
+    Type: AWS::Events::Rule
+    Properties:
+      State: "ENABLED"
+      EventPattern:
+        source:
+          - aws.s3
+        detail:
+          eventSource:
+            - s3.amazonaws.com
+          eventName:
+            - DeleteBucket
+      Targets:
+        - Arn: !GetAtt
+            - removestoragelambda
+            - Arn
+          Id: latest
+  invokeremove:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt removestoragelambda.Arn
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt
+        - removeeventbridgeevent
         - Arn
 Parameters:
   C1WSAPI:
