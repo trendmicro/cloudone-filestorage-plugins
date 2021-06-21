@@ -7,7 +7,7 @@ import urllib.parse
 import boto3
 from botocore.exceptions import ClientError
 
-valid_acl = {
+VALID_ACL = {
     'private',
     'public-read',
     'public-read-write',
@@ -17,20 +17,38 @@ valid_acl = {
     'bucket-owner-full-control',
 }
 
-modes = {
+MODES = {
     'move',
     'copy',
 }
 
-default_mode = 'move'
-s3_domain_pattern = 's3(\..+)?\.amazonaws.com'
-fss_tag_prefix = 'fss-'
+DEFAULT_MODE = 'move'
+S3_DOMAIN_PATTERN = 's3(\..+)?\.amazonaws.com'
+FSS_TAG_PREFIX = 'fss-'
+
+CODE_EMPTY = 0
+CODE_SKIP_MULTIPLE = 100
+CODE_MISC = 199
+
+CODE_MESSAGES = {
+    CODE_EMPTY: '',
+    CODE_SKIP_MULTIPLE : 'incomplete scan due to multiple reasons',
+    101: 'incomplete archive file extraction due to file too large',
+    102: 'incomplete archive file extraction due to too many files in archive',
+    103: 'incomplete archive file extraction due to too many archive layers',
+    104: 'incomplete archive file extraction due to compression ratio exceeds limit',
+    105: 'incomplete archive file extraction due to unsupported compression method',
+    106: 'incomplete archive file extraction due to corrupted compression file',
+    107: 'incomplete archive file extraction due to archive file encryption',
+    108: 'incomplete scan due to Microsoft Office file encryption',
+    CODE_MISC: 'incomplete scan due to miscellaneous reason; provide the fss-scan-detail-code tag value to Trend Micro support',
+}
 
 s3 = boto3.client('s3')
 
 def get_mode_from_env(mode_key):
     mode = os.environ.get(mode_key, 'move').lower()
-    return mode if mode in modes else default_mode
+    return mode if mode in MODES else DEFAULT_MODE
 
 def get_promote_mode():
     return get_mode_from_env('PROMOTEMODE')
@@ -41,7 +59,7 @@ def get_quarantine_mode():
 def parse_s3_object_url(url_string):
     url = urllib.parse.urlparse(url_string)
     # check pre-signed URL type, path or virtual
-    if re.fullmatch(s3_domain_pattern, url.netloc):
+    if re.fullmatch(S3_DOMAIN_PATTERN, url.netloc):
         bucket = url.path.split('/')[1]
         s3_object = '/'.join(url.path.split('/')[2:])
     else:
@@ -57,7 +75,7 @@ def get_existing_tag_set(bucket_name, object_key):
         return list(
             f'{urllib.parse.quote_plus(tag["Key"])}={urllib.parse.quote_plus(tag["Value"])}'
             for tag in response['TagSet']
-            if not tag['Key'].startswith(fss_tag_prefix)
+            if not tag['Key'].startswith(FSS_TAG_PREFIX)
         )
     except ClientError as ex:
         print('failed to get existing tags: ' + str(ex))
@@ -75,7 +93,7 @@ def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, acl=None
         'Key': source_key
     }
 
-    if acl and acl in valid_acl:
+    if acl and acl in VALID_ACL:
         params['ACL'] = acl
 
     s3.copy(copy_source, dest_bucket, dest_key, params)
@@ -105,7 +123,8 @@ def lambda_handler(event, context):
         print('Source Bucket: ', src_bucket)
         print('Object Key: ', object_key)
 
-        findings = message['scanning_result'].get('Findings')
+        scanning_result = message['scanning_result']
+        findings = scanning_result.get('Findings')
 
         operation = 'quarantine' if findings else 'promotion'
         mode = quarantine_mode if findings else promote_mode
@@ -117,10 +136,16 @@ def lambda_handler(event, context):
             print(f'Skip: No bucket specified for {operation}')
             continue
 
+        codes = scanning_result['Codes']
+        code = CODE_EMPTY
+        if len(codes) > 0:
+            code = CODE_SKIP_MULTIPLE if len(codes) > 1 else codes[0]
         tags = [
-            f'{fss_tag_prefix}scanned=true',
-            f'{fss_tag_prefix}scan-date={urllib.parse.quote_plus(scan_date)}',
-            f'{fss_tag_prefix}scan-result={urllib.parse.quote_plus(scan_result)}',
+            f'{FSS_TAG_PREFIX}scanned=true',
+            f'{FSS_TAG_PREFIX}scan-date={urllib.parse.quote_plus(scan_date)}',
+            f'{FSS_TAG_PREFIX}scan-result={urllib.parse.quote_plus(scan_result)}',
+            f'{FSS_TAG_PREFIX}scan-detail-code': str(code),
+            f'{FSS_TAG_PREFIX}scan-detail-message': urllib.parse.quote_plus(CODE_MESSAGES.get(code, CODE_MESSAGES[CODE_MISC])),
         ]
         existing_tag_set = get_existing_tag_set(src_bucket, object_key)
         if existing_tag_set:
