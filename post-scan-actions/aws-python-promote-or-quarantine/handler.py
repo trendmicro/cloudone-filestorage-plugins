@@ -144,8 +144,8 @@ def lambda_handler(event, context):
             f'{FSS_TAG_PREFIX}scanned=true',
             f'{FSS_TAG_PREFIX}scan-date={urllib.parse.quote_plus(scan_date)}',
             f'{FSS_TAG_PREFIX}scan-result={urllib.parse.quote_plus(scan_result)}',
-            f'{FSS_TAG_PREFIX}scan-detail-code': str(code),
-            f'{FSS_TAG_PREFIX}scan-detail-message': urllib.parse.quote_plus(CODE_MESSAGES.get(code, CODE_MESSAGES[CODE_MISC])),
+            f'{FSS_TAG_PREFIX}scan-detail-code={str(code)}',
+            f'{FSS_TAG_PREFIX}scan-detail-message={urllib.parse.quote_plus(CODE_MESSAGES.get(code, CODE_MESSAGES[CODE_MISC]))}',
         ]
         existing_tag_set = get_existing_tag_set(src_bucket, object_key)
         if existing_tag_set:
