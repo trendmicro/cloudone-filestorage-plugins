@@ -6,8 +6,11 @@
 
 - [ ] I've read and followed the [Contributing Guide](https://github.com/trendmicro/cloudone-filestorage-plugins/blob/master/.github/CONTRIBUTING.md).
 - Documents/Readmes
-    - [ ] Updated accordingly
-    - [ ] Not required
+  - [ ] Updated accordingly
+  - [ ] Not required
+- Plugins that have versioning
+  - [ ] Version bumped and follows [Semantic Versioning](https://semver.org/)
+  - [ ] Not required
 
 ## Other Notes
 
