@@ -1,0 +1,344 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "promoteOrQuarantineFunctionName": {
+            "type": "string",
+            "defaultValue": "[concat('pqfunction', uniqueString(resourceGroup().id))]",
+            "metadata": {
+                "description": "The name of the promote or quarantine function to create."
+            }
+        },
+        "scanningStorageAccountResourceID": {
+            "type": "String",
+            "metadata": {
+                "description": "The resource ID of the Storage Account scanned by Trend Micro Cloud One File Storage Security. The ID can be found in the Storage Account's <b>Endpoints</b> page.<br/>For example, <b>/subscriptions/1234abcd-3c6d-4347-9019-123456789012/resourceGroups/storage-resource-group/providers/Microsoft.Storage/storageAccounts/sourcestorageaccount</b>"
+            }
+        },
+        "scanResultTopicResourceID": {
+            "type": "String",
+            "metadata": {
+                "description": "The resource ID of the scan result topic Server Bus topic in storage stack."
+            }
+        },
+        "promoteStorageAccountConnectionString": {
+            "type": "securestring",
+            "defaultValue": "",
+            "metadata": {
+                "description": "(Optional) The connection string of the Storage Account used to promote files without malicious intent. Leave the connection string blank to disable promoting."
+            }
+        },
+        "promoteMode": {
+            "type": "string",
+            "defaultValue": "move",
+            "allowedValues": [
+                "move",
+                "copy"
+            ],
+            "metadata": {
+                "description": "The method by which files were promoted.<br/>(Options: move, copy)."
+            }
+        },
+        "quarantineStorageAccountConnectionString": {
+            "type": "securestring",
+            "defaultValue": "",
+            "metadata": {
+                "description": "(Optional) The connection string of the Storage Account used to quarantine malicious files. Leave the connection string blank to disable quarantining."
+            }
+        },
+        "quarantineMode": {
+            "type": "string",
+            "defaultValue": "move",
+            "allowedValues": [
+                "move",
+                "copy"
+            ],
+            "metadata": {
+                "description": "The method by which files were quarantined.<br/>(Options: move, copy)."
+            }
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]",
+        "functionAppName": "[parameters('promoteOrQuarantineFunctionName')]",
+        "hostingPlanName": "[parameters('promoteOrQuarantineFunctionName')]",
+        "applicationInsightsName": "[parameters('promoteOrQuarantineFunctionName')]",
+        "storageAccountName": "[concat('pqfunction', uniquestring(resourceGroup().id))]",
+        "scanningStorageAccountResourceIDSplits": "[split(parameters('scanningStorageAccountResourceID'), '/')]",
+        "scanningStorageSubscriptionID": "[variables('scanningStorageAccountResourceIDSplits')[2]]",
+        "scanningStorageResourceGroupName": "[variables('scanningStorageAccountResourceIDSplits')[4]]",
+        "scanningStorageAccountName": "[variables('scanningStorageAccountResourceIDSplits')[8]]",
+        "scanningStoragePromteQuarantineRoleAssignmentUID": "[guid(resourceGroup().id, variables('scanningStorageAccountName'))]",
+        "scanningStoragePromteQuarantineRoleName": "[guid('FSS-ScanningStoragePromteQuarantineRole', parameters('promoteOrQuarantineFunctionName'))]",
+        "scanningStoragePromteQuarantineRoleDefinitionName": "[concat('FSS-ScanningStoragePromteQuarantineRole-', parameters('promoteOrQuarantineFunctionName'))]",
+        "scanResultTopicResourceIDSplits": "[split(parameters('scanResultTopicResourceID'), '/')]",
+        "scanResultTopicResourceSubscriptionID": "[variables('scanResultTopicResourceIDSplits')[2]]",
+        "scanResultTopicResourceGroupName": "[variables('scanResultTopicResourceIDSplits')[4]]",
+        "scanResultTopicNamespace": "[variables('scanResultTopicResourceIDSplits')[8]]",
+        "scanResultTopicName": "[variables('scanResultTopicResourceIDSplits')[10]]",
+        "scanResultTopicNamespaceResourceID": "[split(parameters('scanResultTopicResourceID'), '/topics/')[0]]",
+        "scanResultSASKeyName": "RootManageSharedAccessKey",
+        "scanResultAuthRuleResourceID": "[format('{0}/authorizationRules/{1}', variables('scanResultTopicNamespaceResourceID'), variables('scanResultSASKeyName'))]",
+        "scanResultTopicSubscriptionName": "promote-or-quarantine-subscription",
+        "scanResultTopicAPIVersion": "2017-04-01",
+        "functionAppAPIVersion": "2020-12-01",
+        "scanningStoragePromoteQuarantineRoleAssignmentDeployment": "scanningStoragePromoteQuarantineRoleAssignment",
+        "scanResultSubscriptionDeployment": "scanResultSubscription"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('storageAccountName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage"
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2020-12-01",
+            "name": "[variables('hostingPlanName')]",
+            "location": "[variables('location')]",
+            "kind": "linux",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 1
+            },
+            "properties": {
+                "reserved": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "[variables('functionAppAPIVersion')]",
+            "name": "[variables('functionAppName')]",
+            "location": "[variables('location')]",
+            "kind": "functionapp",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ],
+            "properties": {
+                "enabled": true,
+                "reserved": true,
+                "isXenon": false,
+                "hyperV": false,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "siteConfig": {
+                    "use32BitWorkerProcess": false,
+                    "linuxFxVersion": "PYTHON|3.8",
+                    "appSettings": [
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[toLower(variables('functionAppName'))]"
+                        },
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                            "value": "~10"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), '2020-02-02-preview').InstrumentationKey]"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "python"
+                        },
+                        {
+                            "name": "SCAN_RESULT_TOPIC_SUBSCRIPTION",
+                            "value": "[variables('scanResultTopicSubscriptionName')]"
+                        },
+                        {
+                            "name": "BUS_TOPIC_CONNECTION_STRING",
+                            "value": "[listkeys(variables('scanResultAuthRuleResourceID'), variables('scanResultTopicAPIVersion')).primaryConnectionString]"
+                        },
+                        {
+                            "name": "QUARANTINEMODE",
+                            "value": "[parameters('quarantineMode')]"
+                        },
+                        {
+                            "name": "QUARANTINE_STORAGE_CONNECTION_STRING",
+                            "value": "[parameters('quarantineStorageAccountConnectionString')]"
+                        },
+                        {
+                            "name": "PROMOTEMODE",
+                            "value": "[parameters('promoteMode')]"
+                        },
+                        {
+                            "name": "PROMOTE_STORAGE_CONNECTION_STRING",
+                            "value": "[parameters('promoteStorageAccountConnectionString')]"
+                        }
+                    ]
+                },
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(variables('functionAppName'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(variables('functionAppName'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "microsoft.insights/components",
+            "apiVersion": "2020-02-02-preview",
+            "name": "[variables('applicationInsightsName')]",
+            "location": "[variables('location')]",
+            "kind": "web",
+            "tags": {
+                "[concat('hidden-link:', resourceId('Microsoft.Web/sites', variables('applicationInsightsName')))]": "Resource"
+            },
+            "properties": {
+                "Application_Type": "web",
+                "ApplicationId": "[variables('applicationInsightsName')]"
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "[variables('scanResultSubscriptionDeployment')]",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[variables('scanResultTopicResourceGroupName')]",
+            "subscriptionId": "[variables('scanResultTopicResourceSubscriptionID')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+                            "apiVersion": "[variables('scanResultTopicAPIVersion')]",
+                            "name": "[format('{0}/{1}/{2}', variables('scanResultTopicNamespace'), variables('scanResultTopicName'), variables('scanResultTopicSubscriptionName'))]",
+                            "properties": {
+                                "defaultMessageTimeToLive": "PT1H",
+                                "maxDeliveryCount": 3,
+                                "lockDuration": "PT4M"
+                            }
+                        }
+                    ],
+                    "outputs": {
+                        "scanResultTopicSubscriptionResourceID": {
+                            "type": "string",
+                            "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('scanResultTopicNamespace'), variables('scanResultTopicName'), variables('scanResultTopicSubscriptionName'))]"
+                        }
+                    }
+                },
+                "parameters": {}
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "[variables('scanningStoragePromoteQuarantineRoleAssignmentDeployment')]",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[variables('scanningStorageResourceGroupName')]",
+            "subscriptionId": "[variables('scanningStorageSubscriptionID')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/roleDefinitions",
+                            "apiVersion": "2018-07-01",
+                            "name": "[variables('scanningStoragePromteQuarantineRoleName')]",
+                            "properties": {
+                                "roleName": "[variables('scanningStoragePromteQuarantineRoleDefinitionName')]",
+                                "description": "The role for FSS promote or quarantine plugin to read blobs, delete blobs, and generate SAS for blobs.",
+                                "type": "customRole",
+                                "isCustom": true,
+                                "permissions": [
+                                    {
+                                        "actions": [
+                                            "Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey/action"
+                                        ],
+                                        "dataActions": [
+                                            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/read",
+                                            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+                                            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete"
+                                        ]
+                                    }
+                                ],
+                                "assignableScopes": [
+                                    "[parameters('scanningStorageAccountResourceID')]"
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2018-09-01-preview",
+                            "name": "[variables('scanningStoragePromteQuarantineRoleAssignmentUID')]",
+                            "scope": "[concat('Microsoft.Storage/storageAccounts/', variables('scanningStorageAccountName'))]",
+                            "dependsOn": [
+                                "[variables('scanningStoragePromteQuarantineRoleName')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('scanningStoragePromteQuarantineRoleName'))]",
+                                "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), variables('functionAppAPIVersion'), 'full').identity.principalId]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        }
+                    ],
+                    "outputs": {
+                        "scanningStoragePromteQuarantineRoleAssignmentResourceID": {
+                            "type": "string",
+                            "value": "[resourceId('Microsoft.Authorization/roleAssignments', variables('scanningStoragePromteQuarantineRoleAssignmentUID'))]"
+                        },
+                        "scanningStoragePromteQuarantineRoleResourceID": {
+                            "type": "string",
+                            "value": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('scanningStoragePromteQuarantineRoleName'))]"
+                        }
+                    }
+                },
+                "parameters": {}
+            }
+        }
+    ],
+    "outputs": {
+        "promoteOrQuarantineFunctionName": {
+            "type": "string",
+            "value": "[parameters('promoteOrQuarantineFunctionName')]"
+        },
+        "createdScanResultTopicSubscriptionResourceID": {
+            "type": "string",
+            "value": "[reference(variables('scanResultSubscriptionDeployment')).outputs.scanResultTopicSubscriptionResourceID.value]"
+        },
+        "createdScanningStoragePromteQuarantineRoleAssignmentResourceID": {
+            "type": "string",
+            "value": "[reference(variables('scanningStoragePromoteQuarantineRoleAssignmentDeployment')).outputs.scanningStoragePromteQuarantineRoleAssignmentResourceID.value]"
+        },
+        "createdScanningStoragePromteQuarantineRoleResourceID": {
+            "type": "string",
+            "value": "[reference(variables('scanningStoragePromoteQuarantineRoleAssignmentDeployment')).outputs.scanningStoragePromteQuarantineRoleResourceID.value]"
+        }
+    }
+}

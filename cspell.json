@@ -1,8 +1,7 @@
 {
   "version": "0.1",
   "allowCompoundWords": true,
-  "ignorePaths": [
-  ],
+  "ignorePaths": [],
   "ignoreRegExpList": [
     ":.*:",
     "arn:.*"
@@ -11,7 +10,10 @@
     "boto",
     "botocore",
     "eicar",
-    "Spdx"
+    "pqfunction",
+    "Spdx",
+    "strftime",
+    "urlunsplit"
   ],
   "ignoreWords": [
     "fileb"
