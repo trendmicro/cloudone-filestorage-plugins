@@ -600,7 +600,7 @@ Resources:
 Parameters:
   C1RegionEndpoint:
     Type: String
-    Description: Enter your Cloud One Account Region Endpoint (US-1)
+    Description: Enter your Cloud One account region (e.g. us-1)
   C1API:
     Type: String
     NoEcho: true
