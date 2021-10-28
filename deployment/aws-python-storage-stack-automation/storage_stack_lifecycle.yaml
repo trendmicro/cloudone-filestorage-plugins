@@ -302,10 +302,10 @@ Resources:
                   body=encoded_msg,
               )
               transform = json.loads(resp.data.decode("utf-8"))
-              url = "https://filestorage."+c1_region+"cloudone.trendmicro.com/api/stacks/"+transform['stackID']
+              url = "https://filestorage."+c1_region+".cloudone.trendmicro.com/api/stacks/"+transform['stackID']
               try:
                 check_status(cloud_one_api_key, url)
-              except json.decoder.JSONDecodeError:
+              except (json.decoder.JSONDecodeError, KeyError):
                 time.sleep(1)
                 check_status(cloud_one_api_key, url)
           #check storage stack status
