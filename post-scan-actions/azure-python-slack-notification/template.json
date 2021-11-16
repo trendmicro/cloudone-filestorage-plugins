@@ -1,0 +1,233 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "fssSlackFunctionName": {
+            "type": "string",
+            "defaultValue": "[concat('fssslack', uniqueString(resourceGroup().id))]",
+            "metadata": {
+                "description": "The name of the slack function to make."
+            }
+        },
+        "webHookURL": {
+            "type": "string",
+            "defaultValue": "[concat('fssslack', uniqueString(resourceGroup().id))]",
+            "metadata": {
+                "description": "Slack Webhook URL"
+            }
+        },
+        "slackChannelName": {
+            "type": "string",
+            "defaultValue": "[concat('fssslack', uniqueString(resourceGroup().id))]",
+            "metadata": {
+                "description": "Name of Slack Channel"
+            }
+        },
+        "subscriptionName": {
+            "type": "string",
+            "defaultValue": "[concat('fssslack', uniqueString(resourceGroup().id))]",
+            "metadata": {
+                "description": "Name of Azure Subscription"
+            }
+        },
+        "scanResultTopicResourceID": {
+            "type": "String",
+            "metadata": {
+                "description": "The resource ID of the scan result topic Server Bus topic in storage stack."
+            }
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]",
+        "functionAppName": "[parameters('fssSlackFunctionName')]",
+        "hostingPlanName": "[parameters('fssSlackFunctionName')]",
+        "applicationInsightsName": "[parameters('fssSlackFunctionName')]",
+        "storageAccountName": "[concat('fssslack', uniquestring(resourceGroup().id))]",
+        "scanResultTopicResourceIDSplits": "[split(parameters('scanResultTopicResourceID'), '/')]",
+        "scanResultTopicResourceSubscriptionID": "[variables('scanResultTopicResourceIDSplits')[2]]",
+        "scanResultTopicResourceGroupName": "[variables('scanResultTopicResourceIDSplits')[4]]",
+        "scanResultTopicNamespace": "[variables('scanResultTopicResourceIDSplits')[8]]",
+        "scanResultTopicName": "[variables('scanResultTopicResourceIDSplits')[10]]",
+        "scanResultTopicNamespaceResourceID": "[split(parameters('scanResultTopicResourceID'), '/topics/')[0]]",
+        "scanResultSASKeyName": "RootManageSharedAccessKey",
+        "scanResultAuthRuleResourceID": "[format('{0}/authorizationRules/{1}', variables('scanResultTopicNamespaceResourceID'), variables('scanResultSASKeyName'))]",
+        "scanResultTopicSubscriptionName": "fss-slack-subscription",
+        "scanResultTopicAPIVersion": "2017-04-01",
+        "functionAppAPIVersion": "2020-12-01",
+        "fssSlackRoleAssignmentDeployment": "fssSlackRoleAssignment",
+        "slackWebHook": "[parameters('webhookURL')]",
+        "slackChannel": "[parameters('slackChannelName')]",
+        "subscriptionName": "[parameters('subscriptionName')]",
+        "scanResultSubscriptionDeployment": "scanResultSubscription"
+    },
+    "resources": [{
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('storageAccountName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage"
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2020-12-01",
+            "name": "[variables('hostingPlanName')]",
+            "location": "[variables('location')]",
+            "kind": "linux",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 1
+            },
+            "properties": {
+                "reserved": true
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "[variables('functionAppAPIVersion')]",
+            "name": "[variables('functionAppName')]",
+            "location": "[variables('location')]",
+            "kind": "functionapp",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ],
+            "properties": {
+                "enabled": true,
+                "reserved": true,
+                "isXenon": false,
+                "hyperV": false,
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "siteConfig": {
+                    "use32BitWorkerProcess": false,
+                    "linuxFxVersion": "PYTHON|3.8",
+                    "appSettings": [{
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';EndpointSuffix=', environment().suffixes.storage, ';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[toLower(variables('functionAppName'))]"
+                        },
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                            "value": "~10"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('applicationInsightsName')), '2020-02-02-preview').InstrumentationKey]"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "python"
+                        },
+                        {
+                            "name": "SCAN_RESULT_TOPIC_SUBSCRIPTION",
+                            "value": "[variables('scanResultTopicSubscriptionName')]"
+                        },
+                        {
+                            "name": "SLACK_URL_WEBHOOK",
+                            "value": "[variables('slackWebHook')]"
+                        },
+                        {
+                            "name": "SLACK_CHANNEL",
+                            "value": "[variables('slackChannel')]"
+                        },
+                        {
+                            "name": "SUB_NAME",
+                            "value": "[variables('subscriptionName')]"
+                        },
+                        {
+                            "name": "BUS_TOPIC_CONNECTION_STRING",
+                            "value": "[listkeys(variables('scanResultAuthRuleResourceID'), variables('scanResultTopicAPIVersion')).primaryConnectionString]"
+                        }
+                    ]
+                },
+                "hostNameSslStates": [{
+                        "name": "[concat(variables('functionAppName'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(variables('functionAppName'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "microsoft.insights/components",
+            "apiVersion": "2020-02-02-preview",
+            "name": "[variables('applicationInsightsName')]",
+            "location": "[variables('location')]",
+            "kind": "web",
+            "tags": {
+                "[concat('hidden-link:', resourceId('Microsoft.Web/sites', variables('applicationInsightsName')))]": "Resource"
+            },
+            "properties": {
+                "Application_Type": "web",
+                "ApplicationId": "[variables('applicationInsightsName')]"
+            }
+        },
+        {
+            "apiVersion": "2019-05-01",
+            "name": "[variables('scanResultSubscriptionDeployment')]",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[variables('scanResultTopicResourceGroupName')]",
+            "subscriptionId": "[variables('scanResultTopicResourceSubscriptionID')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [{
+                        "type": "Microsoft.ServiceBus/namespaces/topics/subscriptions",
+                        "apiVersion": "[variables('scanResultTopicAPIVersion')]",
+                        "name": "[format('{0}/{1}/{2}', variables('scanResultTopicNamespace'), variables('scanResultTopicName'), variables('scanResultTopicSubscriptionName'))]",
+                        "properties": {
+                            "defaultMessageTimeToLive": "PT1H",
+                            "maxDeliveryCount": 3,
+                            "lockDuration": "PT4M"
+                        }
+                    }],
+                    "outputs": {
+                        "scanResultTopicSubscriptionResourceID": {
+                            "type": "string",
+                            "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics/subscriptions', variables('scanResultTopicNamespace'), variables('scanResultTopicName'), variables('scanResultTopicSubscriptionName'))]"
+                        }
+                    }
+                },
+                "parameters": {}
+            }
+        }
+    ],
+    "outputs": {
+        "fssSlackFunctionName": {
+            "type": "string",
+            "value": "[parameters('fssSlackFunctionName')]"
+        },
+        "createdScanResultTopicSubscriptionResourceID": {
+            "type": "string",
+            "value": "[reference(variables('scanResultSubscriptionDeployment')).outputs.scanResultTopicSubscriptionResourceID.value]"
+        }
+    }
+}
