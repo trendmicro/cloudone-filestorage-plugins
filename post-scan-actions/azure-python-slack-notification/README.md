@@ -7,7 +7,7 @@ After a malicious scan result, this example Azure function sends a notification 
 1. **Install supporting tools**
     - Install the Azure command line interface (CLI). See [Install the Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) for details.
     - Install the Azure Functions Core Tools. See [Work with Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local) for details.
-1. **Find the scanning blob storage account resource ID and the service bus topic resource ID**
+1. **Find the Service Bus Topic Resource ID**
     - In the Azure portal, go to **Resource group** > your storage stack > **Deployments > storageStack > Outputs**.
     - Copy the value of **scanResultTopicResourceID** to a temporary location. Example: `/subscriptions/12345678-1111-1111-1111-123456789012/resourceGroups/my-storage-stack/providers/Microsoft.ServiceBus/namespaces/tmsrt0abcd56789abcd/topics/scan-result-topic`.
 1. **Configure Slack Webhook App**
@@ -47,9 +47,8 @@ After a malicious scan result, this example Azure function sends a notification 
         --resource-group $RESOURCE_GROUP_NAME \
         --template-uri https://raw.githubusercontent.com/trendmicro/cloudone-filestorage-plugins/master/post-scan-actions/azure-python-slack-notification/template.json \
         -p fssSlackFunctionName=$FUNCTION_NAME \
-        webHookURL=$SLACK_WEBHOOK_URL \
+        slackWebHookURL=$SLACK_WEBHOOK_URL \
         slackChannelName=$SLACK_CHANNEL_NAME \
-        subscriptionName=$AZURE_SUBSCRIPTION_NAME \
         scanResultTopicResourceID=$SCAN_RESULT_TOPIC_RESOURCE_ID
     ```
 

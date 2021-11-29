@@ -9,25 +9,16 @@
                 "description": "The name of the slack function to make."
             }
         },
-        "webHookURL": {
+        "slackWebHookURL": {
             "type": "string",
-            "defaultValue": "[concat('fssslack', uniqueString(resourceGroup().id))]",
             "metadata": {
                 "description": "Slack Webhook URL"
             }
         },
         "slackChannelName": {
             "type": "string",
-            "defaultValue": "[concat('fssslack', uniqueString(resourceGroup().id))]",
             "metadata": {
                 "description": "Name of Slack Channel"
-            }
-        },
-        "subscriptionName": {
-            "type": "string",
-            "defaultValue": "[concat('fssslack', uniqueString(resourceGroup().id))]",
-            "metadata": {
-                "description": "Name of Azure Subscription"
             }
         },
         "scanResultTopicResourceID": {
@@ -54,10 +45,6 @@
         "scanResultTopicSubscriptionName": "fss-slack-subscription",
         "scanResultTopicAPIVersion": "2017-04-01",
         "functionAppAPIVersion": "2020-12-01",
-        "fssSlackRoleAssignmentDeployment": "fssSlackRoleAssignment",
-        "slackWebHook": "[parameters('webhookURL')]",
-        "slackChannel": "[parameters('slackChannelName')]",
-        "subscriptionName": "[parameters('subscriptionName')]",
         "scanResultSubscriptionDeployment": "scanResultSubscription"
     },
     "resources": [{
@@ -93,9 +80,6 @@
             "name": "[variables('functionAppName')]",
             "location": "[variables('location')]",
             "kind": "functionapp",
-            "identity": {
-                "type": "SystemAssigned"
-            },
             "dependsOn": [
                 "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
                 "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
@@ -143,15 +127,15 @@
                         },
                         {
                             "name": "SLACK_URL_WEBHOOK",
-                            "value": "[variables('slackWebHook')]"
+                            "value": "[parameters('slackWebHookURL')]"
                         },
                         {
                             "name": "SLACK_CHANNEL",
-                            "value": "[variables('slackChannel')]"
+                            "value": "[parameters('slackChannelName')]"
                         },
                         {
                             "name": "SUB_NAME",
-                            "value": "[variables('subscriptionName')]"
+                            "value": "[subscription().displayName]"
                         },
                         {
                             "name": "BUS_TOPIC_CONNECTION_STRING",
@@ -206,7 +190,7 @@
                         "properties": {
                             "defaultMessageTimeToLive": "PT1H",
                             "maxDeliveryCount": 3,
-                            "lockDuration": "PT4M"
+                            "lockDuration": "PT1M"
                         }
                     }],
                     "outputs": {

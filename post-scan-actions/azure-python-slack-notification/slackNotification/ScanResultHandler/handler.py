@@ -26,11 +26,10 @@ def main(message: func.ServiceBusMessage):
     message = json.loads(message_body)
     findings = message['scanning_result'].get('Findings')
 
-    if findings:
-            
+    if findings:         
         malwares = []
         types = []
-        for finding in message['scanning_result']['Findings']:
+        for finding in findings:
             malwares.append(finding.get('malware'))
             types.append(finding.get('type'))
 
@@ -54,4 +53,5 @@ def main(message: func.ServiceBusMessage):
                     }
         
         encoded_msg = json.dumps(payload).encode('utf-8')
-        resp = http.request('POST',url, body=encoded_msg)
+        resp = http.request('POST', url, body=encoded_msg)
+        logging.info(f'sending slack response: {resp}')
