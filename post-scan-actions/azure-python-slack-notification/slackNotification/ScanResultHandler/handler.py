@@ -15,7 +15,7 @@ logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(l
 def main(message: func.ServiceBusMessage):
     # set slack variables
     url = os.environ["SLACK_URL_WEBHOOK"]
-    account = os.environ["SUB_NAME"]
+    account = os.environ["TENANT_NAME"]
     channel = os.environ["SLACK_CHANNEL"]
 
     # Log the Service Bus Message as plaintext

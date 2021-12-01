@@ -134,8 +134,8 @@
                             "value": "[parameters('slackChannelName')]"
                         },
                         {
-                            "name": "SUB_NAME",
-                            "value": "[subscription().displayName]"
+                            "name": "TENANT_NAME",
+                            "value": "[tenant().displayName]"
                         },
                         {
                             "name": "BUS_TOPIC_CONNECTION_STRING",
