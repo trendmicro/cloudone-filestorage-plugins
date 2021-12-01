@@ -6,7 +6,6 @@ http = urllib3.PoolManager()
 import textwrap
 
 import azure.functions as func
-from azure.identity import DefaultAzureCredential
 
 # Hide verbose HTTP logging
 logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
@@ -35,7 +34,7 @@ def main(message: func.ServiceBusMessage):
 
         body_text = textwrap.dedent('''
         WARNING
-        Azure Subscription: {account_id}
+        Azure Tenant: {account_id}
         File URL: {file_url}
         Malware Name(s): {malwares}
         Malware Type(s): {types}
