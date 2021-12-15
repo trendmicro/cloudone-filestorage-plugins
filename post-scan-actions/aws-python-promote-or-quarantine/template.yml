@@ -13,15 +13,12 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.0.7
+    SemanticVersion: 1.0.8
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
   ScanningBucketName:
     Type: String
-    AllowedPattern: ^[0-9a-z]+([0-9a-z-]*[0-9a-z])*$
-    ConstraintDescription: S3 bucket name can include numbers, lowercase letters,
-      and hyphens (-). It cannot start or end with a hyphen (-).
     Description: The S3 bucket scanned by Trend Micro Cloud One File Storage Security.
   ScanResultTopicARN:
     Type: String
