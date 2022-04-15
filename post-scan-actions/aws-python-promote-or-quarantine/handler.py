@@ -57,7 +57,14 @@ CODE_MESSAGES = {
     CODE_MISC: 'incomplete scan due to miscellaneous reason. Provide the fss-scan-detail-code tag value to Trend Micro support',
 }
 
-s3 = boto3.client('s3')
+S3_MAX_CONCURRENCY = 940
+S3_MULTIPART_CHUNK_SIZE = 16 * 1024 * 1024   # 16MB
+S3_MAX_POOL_CONNECTIONS = 940
+S3_MAX_ATTEMPTS = 100
+
+transfer_config = TransferConfig(max_concurrency=S3_MAX_CONCURRENCY, multipart_chunksize=S3_MULTIPART_CHUNK_SIZE)
+config = Config(max_pool_connections=S3_MAX_POOL_CONNECTIONS, retries = {'max_attempts': S3_MAX_ATTEMPTS})
+s3 = boto3.client('s3', config=config)
 
 def get_mode_from_env(mode_key):
     mode = os.environ.get(mode_key, 'move').lower()
@@ -117,7 +124,7 @@ def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, metadata
     if acl and acl in VALID_ACL:
         params['ACL'] = acl
 
-    s3.copy(copy_source, dest_bucket, dest_key, params)
+    s3.copy(copy_source, dest_bucket, dest_key, params, Config=transfer_config)
 
 def delete_objects(bucket, prefix, objects):
     objects = {'Objects': [{'Key': prefix + o} for o in objects]}
