@@ -5,6 +5,8 @@ import time
 import urllib.parse
 
 import boto3
+from boto3.s3.transfer import TransferConfig
+from botocore.client import Config
 from botocore.exceptions import ClientError
 
 VALID_ACL = {
@@ -16,6 +18,17 @@ VALID_ACL = {
     'bucket-owner-read',
     'bucket-owner-full-control',
 }
+
+VALID_METADATA = [
+    'CacheControl',
+    'ContentDisposition',
+    'ContentEncoding',
+    'ContentLanguage',
+    'ContentType',
+    'Metadata',
+    'WebsiteRedirectLocation',
+    'Expires'
+]
 
 MODES = {
     'move',
@@ -81,11 +94,19 @@ def get_existing_tag_set(bucket_name, object_key):
         print('failed to get existing tags: ' + str(ex))
         return None
 
-def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, acl=None):
+def get_metadata(bucket_name, object_key):
+    try:
+        metadata = s3.head_object(Bucket=bucket_name, Key=object_key)
+        return dict(filter(lambda elem: elem[0] in VALID_METADATA, metadata.items()))
+    except ClientError as ex:
+        print('failed to get existing metadata: ' + str(ex))
+        return None
+
+def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, metadata, acl=None):
     params = {
         'TaggingDirective': 'REPLACE',
         'Tagging': '&'.join(tags),
-
+        **(metadata if metadata else {})
     }
 
     copy_source = {
@@ -151,12 +172,15 @@ def lambda_handler(event, context):
         if existing_tag_set:
             tags.extend(existing_tag_set)
 
+        metadata = get_metadata(src_bucket, object_key)
+
         copy_object(
             source_bucket=src_bucket,
             dest_bucket=dst_bucket,
             source_key=object_key,
             dest_key=object_key,
             tags=tags,
+            metadata=metadata,
             acl=acl,
         )
 
