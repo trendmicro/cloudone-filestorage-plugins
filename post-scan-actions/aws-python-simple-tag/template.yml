@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: cloudone-filestorage-plugin-action-simple-tag
+    Description: >-
+      After a scan occurs, this example application tag scan result to the file.
+    Author: Trend Micro Cloud One File Storage Security
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: ../../LICENSE
+    ReadmeUrl: README.md
+    Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, tag]
+    HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
+    SemanticVersion: 1.0.4
+    SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-simple-tag
+
+Parameters:
+  ScanningBucketName:
+    Type: String
+    AllowedPattern: ^[0-9a-z]+([0-9a-z-]*[0-9a-z])*$
+    ConstraintDescription: S3 bucket name can include numbers, lowercase letters,
+      and hyphens (-). It cannot start or end with a hyphen (-).
+    Description: The S3 bucket scanned by Trend Micro Cloud One File Storage Security.
+  ScanResultTopicARN:
+    Type: String
+    Description: The ARN of the scan result SNS topic in storage stack.
+
+Resources:
+  SimpleTagLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./
+      Handler: handler.lambda_handler
+      Runtime: python3.8
+      MemorySize: 512
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectTagging
+              - s3:PutObjectTagging
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${ScanningBucketName}/*
+      Events:
+        ScanResult:
+          Type: SNS
+          Properties:
+            Topic: !Ref ScanResultTopicARN

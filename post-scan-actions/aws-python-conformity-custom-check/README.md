@@ -4,10 +4,13 @@ After a scan occurs and a malicious file is detected, this example Lambda functi
 
 ## Prerequisites
 
-1. **Configure Conformity API Key**
-    - Log into Conformity and select your username and select `User settings`.
-    - Select `API Keys`.
-    - Select `+ New API Key`, then select `Generate Key`.
+1. **Configure Clond One API Key for Conformity**
+    - In the upper-right corner of the Trend Micro Cloud One console, select the account where you want to add an API key.
+    - Click the account name and then `Account Settings`.
+    - Click on `API Keys` from the left hand side navigation.
+    - Click on `New` to create a new API Key.
+    - Input the API Key Alias, Role, Language, and Timezone.
+    - Clicking on the `Next` button will generate a new API Key for you.
     - Copy the generated API Key for use later when installing the function.
 2. **Find the 'ScanResultTopicARN' SNS topic ARN**
     - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Outputs**  or **Services > CloudFormation** > your storage stack > **Outputs**.
