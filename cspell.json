@@ -10,9 +10,11 @@
     "boto",
     "botocore",
     "eicar",
+    "gcloud",
     "pqfunction",
     "Spdx",
     "strftime",
+    "tfvars",
     "urlunsplit"
   ],
   "ignoreWords": [
