@@ -1,0 +1,14 @@
+project_settings = {
+    project_id = "<GCP_PROJECT_ID>" // e.g. test-project-998877
+    region = "<GCP_REGION>" // e.g. us-central1
+    plugin_prefix = "<CLOUD_FUNCTION_PREFIX>" // e.g. test-for-fss
+}
+
+deployment_name = "<DEPLOYMENT_NAME>" // e.g. test-deployment
+
+scan_result_topic = "<TOPIC_NAME>" // e.g. my-deployment-scan-result-topic
+scanning_bucket = "<SCANNING_BUCKET_NAME>" // e.g. scanning-gcs-bucket
+quarantine_mode = "move" // move or copy leave it empty
+quarantine_bucket = "<QUARANTINE_BUCKET_NAME>" // e.g. quarantine-gcs-bucket Leave it empty if you don't want to quarantine files.
+promote_mode = "move" // move or copy
+promote_bucket = "<PROMOTE_BUCKET_NAME>" // e.g. promote-gcs-bucket Leave it empty if you don't want to promote files.
