@@ -17,6 +17,7 @@ terraform.tfstate.backup
 
 # macOS
 **/.dccache
+**/.DS_Store
 
 # VSCode
 **/.vscode
