@@ -1,7 +1,7 @@
 {
-  "name": "gcp-slack",
+  "name": "cloudone-fss-gcp-slack-notifications",
   "version": "0.1.0",
-  "description": "",
+  "description": "Slack notification post-scan action plugin for Cloud One File Storage Security",
   "main": "main.py",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
