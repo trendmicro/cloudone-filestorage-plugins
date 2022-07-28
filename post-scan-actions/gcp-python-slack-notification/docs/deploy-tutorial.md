@@ -63,9 +63,9 @@ Specify the following fields in your deployment command  and execute the deploym
 
 ## Test Slack notifications
 
-1. Check Slack to see new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
+Check Slack to see new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
 
-2. Download the eicar file from eicar file page into your scanning bucket with the script.
+1. Download the eicar file from eicar file page into your scanning bucket with the script.
 
     ```
     wget https://secure.eicar.org/eicar.com.txt
@@ -75,7 +75,7 @@ Specify the following fields in your deployment command  and execute the deploym
 
     > File Storage Security scans the file and detects the malware.
 
-3. Execute the script to examine the scan result:
+2. Execute the script to examine the scan result:
 
     ```
     gsutil stat 'gs://<SCANNING_BUCKET_NAME>/eicar'
