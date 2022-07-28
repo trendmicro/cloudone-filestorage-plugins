@@ -11,7 +11,7 @@
 
 ### With GCP Cloud Shell
 
-1. Visit [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Ftrendmicro%2Fcloudone-filestorage-plugins.git&cloudshell_workspace=post-scan-actions%2Fgcp-python-promote-or-quarantine&cloudshell_tutorial=docs/deploy-tutorial.md)
+1. Visit [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Ftrendmicro%2Fcloudone-filestorage-plugins.git&cloudshell_workspace=post-scan-actions%2Fgcp-python-slack-notification&cloudshell_tutorial=docs/deploy-tutorial.md)
 
 ### LocalMachine
 
@@ -26,7 +26,7 @@
 > If using a local machine and not Google Cloud Shell, use `gcloud auth application-default login` to login with gcloud CLI.
 
    ```
-   gcloud config set project <walkthrough-project-id/>
+   gcloud config set project <PROJECT_ID>
    ```
 
 3. Setup the serverless.yml file with your `environment` variables, like `SLACK_URL`, `SLACK_CHANNEL`, `SLACK_USERNAME`
