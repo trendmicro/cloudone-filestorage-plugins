@@ -2,26 +2,27 @@ service: cloudone-fss-gcp-slack-notifications
 
 custom:
   defaultStage: prod
-  stages:
-    prod:
-      SLACK_URL: <SLACK_URL>
-      SLACK_CHANNEL: notifications
-      SLACK_USERNAME: Cloud One File Storage Security
-      DEPLOYMENT_REGION: <GCP_DEPLOYMENT_REGION>
-      GCP_PROJECT_ID: <PROJECT_ID>
-      EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
-      TRIGGER_RESOURCE: projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>
+
+params:
+  prod:
+    SLACK_URL: <SLACK_URL>
+    SLACK_CHANNEL: notifications
+    SLACK_USERNAME: Cloud One File Storage Security
+    DEPLOYMENT_REGION: <GCP_DEPLOYMENT_REGION>
+    GCP_PROJECT_ID: <PROJECT_ID>
+    EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
+    TRIGGER_RESOURCE: projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>
 
 provider:
   name: google
   stage: ${opt:stage, self:custom.defaultStage}
   runtime: python39
-  region: ${param.DEPLOYMENT_REGION}
-  project: ${param.GCP_PROJECT_ID}
+  region: ${param:DEPLOYMENT_REGION}
+  project: ${param:GCP_PROJECT_ID}
   environment:
-    SLACK_URL: ${param.SLACK_URL}
-    SLACK_CHANNEL: ${param.SLACK_CHANNEL}
-    SLACK_USERNAME: ${param.SLACK_USERNAME}
+    SLACK_URL: ${param:SLACK_URL}
+    SLACK_CHANNEL: ${param:SLACK_CHANNEL}
+    SLACK_USERNAME: ${param:SLACK_USERNAME}
 
 frameworkVersion: '3'
 plugins:
@@ -41,5 +42,5 @@ functions:
     handler: main
     events:
       - event:
-          eventType: ${param.EVENT_TYPE}
-          resource: ${param.TRIGGER_RESOURCE}
+          eventType: ${param:EVENT_TYPE}
+          resource: ${param:TRIGGER_RESOURCE}
