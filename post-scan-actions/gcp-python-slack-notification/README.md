@@ -15,7 +15,7 @@
 
 ### LocalMachine
 
-1. Login to the Google cloud SDK
+1. Login to the Google Cloud SDK
 
    ```sh
    gcloud init
