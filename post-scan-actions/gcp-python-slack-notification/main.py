@@ -1,8 +1,10 @@
 import os
-import base64
 import json
+import base64
 import textwrap
 import urllib3
+from http.client import responses
+
 http = urllib3.PoolManager()
 
 def get_gcp_project_id(resource_name):
@@ -33,10 +35,7 @@ def main(event, context):
         channel = os.environ['SLACK_CHANNEL']
         username = os.environ['SLACK_USERNAME']
 
-        # Context: {event_id: 5201641954693584, timestamp: 2022-07-27T17:03:42.432Z, event_type: providers/cloud.pubsub/eventTypes/topic.publish, resource: projects/gcp-fss/topics/jasondablow-scan-result-topic}
         print("""This Function was triggered by messageId {} published at {} to {}""".format(context.event_id, context.timestamp, context.resource))
-
-        # {'timestamp': 1658940543.4881084, 'file_url': 'https://storage.googleapis.com/fss-jason/eicar', 'scan_start_timestamp': 1658940543.3512957, 'scanner_status': 0, 'scanner_status_message': 'successful scan', 'scanning_result': {'TotalBytesOfFile': 68, 'Findings': [{'malware': 'Eicar_test_file', 'type': 'Virus'}], 'Error': '', 'Codes': []}}
 
         if message:
             # Message details from the Pub/Sub topic publish event
@@ -81,6 +80,9 @@ def main(event, context):
 
                 encoded_message = json.dumps(payload).encode('utf-8')
                 resp = http.request('POST', url,  body=encoded_message)
+
+                if resp.status != 200:
+                    raise Exception("HTTP Error " + str(resp.status) + ". Message: " + str(responses[resp.status]))
                 return resp.status
 
     except Exception as e:
