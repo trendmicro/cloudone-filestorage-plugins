@@ -2,26 +2,27 @@ service: cloudone-fss-gcp-slack-notifications
 
 custom:
   defaultStage: prod
-  stages:
-    prod:
-      SLACK_URL: https://hooks.slack.com/services/T00000000/B00000000/<your-slack-url>
-      SLACK_CHANNEL: notifications
-      SLACK_USERNAME: Cloud One File Storage Security
-      DEPLOYMENT_REGION: <gcp-deployment-region>
-      GCP_PROJECT_ID: <gcp-project-id>
-      EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
-      TRIGGER_RESOURCE: projects/<gcp-project-id>/topics/<scan-result-topic-name>
+
+params:
+  prod:
+    SLACK_URL: <SLACK_URL>
+    SLACK_CHANNEL: notifications
+    SLACK_USERNAME: Cloud One File Storage Security
+    DEPLOYMENT_REGION: <GCP_DEPLOYMENT_REGION>
+    GCP_PROJECT_ID: <PROJECT_ID>
+    EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
+    TRIGGER_RESOURCE: projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>
 
 provider:
   name: google
   stage: ${opt:stage, self:custom.defaultStage}
   runtime: python39
-  region: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.DEPLOYMENT_REGION}
-  project: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.GCP_PROJECT_ID}
+  region: ${param:DEPLOYMENT_REGION}
+  project: ${param:GCP_PROJECT_ID}
   environment:
-    SLACK_URL: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.SLACK_URL}
-    SLACK_CHANNEL: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.SLACK_CHANNEL}
-    SLACK_USERNAME: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.SLACK_USERNAME}
+    SLACK_URL: ${param:SLACK_URL}
+    SLACK_CHANNEL: ${param:SLACK_CHANNEL}
+    SLACK_USERNAME: ${param:SLACK_USERNAME}
 
 frameworkVersion: '3'
 plugins:
@@ -41,5 +42,5 @@ functions:
     handler: main
     events:
       - event:
-          eventType: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.EVENT_TYPE}
-          resource: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.TRIGGER_RESOURCE}
+          eventType: ${param:EVENT_TYPE}
+          resource: ${param:TRIGGER_RESOURCE}

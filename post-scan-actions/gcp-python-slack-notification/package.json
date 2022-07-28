@@ -4,9 +4,12 @@
   "description": "Slack notification post-scan action plugin for Cloud One File Storage Security",
   "main": "main.py",
   "scripts": {
+    "package": "sls package",
+    "deploy": "sls deploy --verbose",
+    "delete": "sls remove --verbose",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "serverless.com",
+  "author": "github.com/GeorgeDavis-TM",
   "license": "MIT",
   "devDependencies": {
     "serverless-google-cloudfunctions": "^4.6.0"
