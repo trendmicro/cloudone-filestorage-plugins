@@ -4,13 +4,13 @@ custom:
   defaultStage: prod
   stages:
     prod:
-      SLACK_URL: https://hooks.slack.com/services/T00000000/B00000000/<your-slack-url>
+      SLACK_URL: <SLACK_URL>
       SLACK_CHANNEL: notifications
       SLACK_USERNAME: Cloud One File Storage Security
-      DEPLOYMENT_REGION: <gcp-deployment-region>
-      GCP_PROJECT_ID: <gcp-project-id>
+      DEPLOYMENT_REGION: <GCP_DEPLOYMENT_REGION>
+      GCP_PROJECT_ID: <PROJECT_ID>
       EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
-      TRIGGER_RESOURCE: projects/<gcp-project-id>/topics/<scan-result-topic-name>
+      TRIGGER_RESOURCE: projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>
 
 provider:
   name: google
