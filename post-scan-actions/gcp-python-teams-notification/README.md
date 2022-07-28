@@ -1,12 +1,11 @@
-# Cloud One File Storage Security Post Scan Action for GCP - Promote or Quarantine
+# Cloud One File Storage Security Post Scan Action for GCP - MS Teams notifications
 
-**Warning: GCP solution is not yet in GA phase.**
+**:warning: Note: File Storage Security for GCP solution is in preview.**
 
 ## Prerequisites
 
 1. **Install supporting tools**
    - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install-sdk)
-   - [Terraform](https://www.terraform.io/downloads)
 
 ## Installation
 
@@ -22,22 +21,21 @@
    gcloud init
    ```
 
-1. Create a function zip for the deployment using make.
+2. Copy the execute the script below to set the project ID where the storage stack is deployed.
 
-   ```sh
-   make
+> If using a local machine and not Google Cloud Shell, use `gcloud auth application-default login` to login with gcloud CLI.
+
+   ```
+   gcloud config set project <walkthrough-project-id/>
    ```
 
-1. Initialize terraform.
+3. Setup the serverless.yml file with your `environment` variables, like `TEAMS_URL`
 
-   ```sh
-   terraform init
-   ```
+4. Deploy Serverless project
 
-1. Deploy the function and fill the variables following the CLI. (Or using the `main.auto.tfvars` file)
+    ```
+    serverless plugin install -n serverless-google-cloudfunctions
+    serverless deploy -s prod
+    ```
 
-   ```sh
-   terraform apply
-   ```
-
-   Instead of filling in the variables individually, you can create and use a `main.auto.tfvars` file. Enter the variables in to the `main.auto.tfvars.example` file, and then save the file as `main.auto.tfvars`. Once you have created and saved the file, you can reuse the file rather than fill in the variables every time.
+5. Check MS Teams Channel to see new notifications. For testing the plugin, download an EICAR file and upload the file to your Google Cloud Storage bucket. [Download EICAR file here](https://secure.eicar.org/eicar_com.zip)
