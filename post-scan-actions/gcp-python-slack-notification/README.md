@@ -26,7 +26,7 @@
 > If using a local machine and not Google Cloud Shell, use `gcloud auth application-default login` to login with gcloud CLI.
 
    ```
-   gcloud config set project <walkthrough-project-id/>
+   gcloud config set project <PROJECT_ID>
    ```
 
 3. Setup the serverless.yml file with your `environment` variables, like `SLACK_URL`, `SLACK_CHANNEL`, `SLACK_USERNAME`
