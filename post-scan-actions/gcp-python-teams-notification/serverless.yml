@@ -2,22 +2,23 @@ service: cloudone-fss-gcp-teams-notifications
 
 custom:
   defaultStage: prod
-  stages:
-    prod:
-      TEAMS_URL: https://<your-domain>.webhook.office.com/webhookb2/20adbe57-954d-4a20-a961-826581d0d866@3e04753a-ae5b-42d4-a86d-d6f05460f9e4/IncomingWebhook/<your-teams-url>
-      DEPLOYMENT_REGION: <gcp-deployment-region>
-      GCP_PROJECT_ID: <gcp-project-id>
-      EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
-      TRIGGER_RESOURCE: projects/<gcp-project-id>/topics/<scan-result-topic-name>
+
+params:
+  prod:
+    TEAMS_URL: <TEAMS_URL>
+    DEPLOYMENT_REGION: <GCP_DEPLOYMENT_REGION>
+    GCP_PROJECT_ID: <PROJECT_ID>
+    EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
+    TRIGGER_RESOURCE: projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>
 
 provider:
   name: google
   stage: ${opt:stage, self:custom.defaultStage}
   runtime: python39
-  region: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.DEPLOYMENT_REGION}
-  project: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.GCP_PROJECT_ID}
+  region: ${param:DEPLOYMENT_REGION}
+  project: ${param:GCP_PROJECT_ID}
   environment:
-    TEAMS_URL: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.TEAMS_URL}
+    TEAMS_URL: ${param:TEAMS_URL}
 
 frameworkVersion: '3'
 plugins:
@@ -37,5 +38,5 @@ functions:
     handler: main
     events:
       - event:
-          eventType: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.EVENT_TYPE}
-          resource: ${self:custom.stages.${opt:stage, self:custom.defaultStage}.TRIGGER_RESOURCE}
+          eventType: ${param:EVENT_TYPE}
+          resource: ${param:TRIGGER_RESOURCE}

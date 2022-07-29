@@ -55,8 +55,8 @@ def main(event, context):
                 types=', '.join(types)
 
                 payload = {
-                    "@type": "MessageCard",
-                    "@context": "http://schema.org/extensions",
+                    '@type': 'MessageCard',
+                    '@context': 'http://schema.org/extensions',
                     'summary': 'Malicious Object Detected',
                     'sections': [
                         {
