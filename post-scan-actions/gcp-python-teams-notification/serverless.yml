@@ -25,13 +25,10 @@ plugins:
   - serverless-google-cloudfunctions
 
 package:
-  include:
-    - "!node_modules/**"
-    - "!docs/**"
-    - "!.git/**"
-  exclude:
-    - README.md
-    - .gitignore
+  patterns:
+    - '!node_modules/**'
+    - '!docs/**'
+    - '!README.md'
 
 functions:
   main:
