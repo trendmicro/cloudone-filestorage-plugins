@@ -3,6 +3,7 @@ import json
 import base64
 import urllib3
 from http.client import responses
+import logging
 
 http = urllib3.PoolManager()
 
@@ -22,17 +23,17 @@ def main(event, context):
 
     try:
 
-        print(f'Context: {context}')
-        print(f'Event: {event}')
+        logging.info('Context: {context}')
+        logging.info('Event: {event}')
         base64_data = event.get('data', '')
         base64_bytes = base64_data.encode('ascii')
         message_bytes = base64.b64decode(base64_bytes)
         message = json.loads(message_bytes.decode('ascii'))
-        print(f'Message: {message}')
+        logging.info('Message: {message}')
 
         url = os.environ['TEAMS_URL']
 
-        print("""This Function was triggered by messageId {} published at {} to {}""".format(context.event_id, context.timestamp, context.resource))
+        logging.info("""This Function was triggered by messageId {} published at {} to {}""".format(context.event_id, context.timestamp, context.resource))
 
         if message:
             # Message details from the Pub/Sub topic publish event
@@ -110,8 +111,10 @@ def main(event, context):
                 resp = http.request('POST', url,  body=encoded_message)
 
                 if resp.status != 200:
+                    logging.info("HTTP Payload: " + str(payload))
+                    logging.error("Encountered HTTP Error " + str(resp.status) + ". Message: " + str(responses[resp.status]))
                     raise Exception("HTTP Error " + str(resp.status) + ". Message: " + str(responses[resp.status]))
                 return resp.status
 
     except Exception as e:
-        print("Error: ", str(e))
+        logging.error(e)
