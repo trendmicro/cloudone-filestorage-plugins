@@ -117,4 +117,4 @@ def main(event, context):
                 return resp.status
 
     except Exception as e:
-        logging.error(e)
+        logging.exception(e)
