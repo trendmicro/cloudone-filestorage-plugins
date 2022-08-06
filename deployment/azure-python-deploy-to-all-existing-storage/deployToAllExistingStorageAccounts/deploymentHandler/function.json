@@ -1,0 +1,12 @@
+{
+    "scriptFile": "az-test.py",
+    "entryPoint": "main",
+    "bindings": [
+        {
+            "schedule": "* 1 * * * *",
+            "name": "deployFssTimer",
+            "type": "timerTrigger",
+            "direction": "in"
+        }
+    ]
+}

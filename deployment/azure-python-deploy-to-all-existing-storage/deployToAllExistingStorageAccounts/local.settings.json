@@ -1,0 +1,11 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+        "AzureWebJobsStorage": "DefaultEndpointsProtocol=https;EndpointSuffix=core.windows.net;AccountName=deployfss314573532;AccountKey=lhg1tG77MAF/JoyArx0PiBDwJG39tQJLqJsIxCEZBwNBkldvF5FAuUVPU5itHKrK6usSXdMREEch+AStp2Z+yQ==",
+        "FUNCTIONS_WORKER_RUNTIME": "python",
+        "BUS_TOPIC_CONNECTION_STRING": "",
+        "FUNCTIONS_EXTENSION_VERSION": "~4",
+        "APPINSIGHTS_INSTRUMENTATIONKEY": "02dde323-d0f0-47d3-a8b2-57d47e8150f6"
+    },
+    "ConnectionStrings": {}
+}

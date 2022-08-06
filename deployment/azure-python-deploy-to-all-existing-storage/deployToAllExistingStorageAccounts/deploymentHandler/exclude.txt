@@ -1,0 +1,3 @@
+my-bucket-exclusion-18764878
+another-exclude-bucket-96498703
+this-bucket-should-not-be-monitored-45326538

@@ -1,0 +1,837 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "FileStorageSecurityServicePrincipalID": {
+            "type": "string",
+            "metadata": {
+                "description": "The ID of the Service Principal created for Trend Micro's App Registration."
+            },
+            "maxLength": 36
+        },
+        "CloudOneRegion": {
+            "type": "string",
+            "metadata": {
+                "description": "The region of the Trend Micro Cloud One services.<br/>For more information, see supported <a href='https://cloudone.trendmicro.com/docs/identity-and-account-management/c1-regions/'>Cloud One regions</a>."
+            },
+            "defaultValue": "us-1"
+        },
+        "ScannerIdentityPrincipalID": {
+            "type": "String",
+            "metadata": {
+                "description": "The principal ID of the managed identity assigned to the Scanner Function."
+            }
+        },
+        "ScannerQueueNamespace": {
+            "type": "String",
+            "metadata": {
+                "description": "The Scanner Queue's namespace name."
+            }
+        },
+        "BlobStorageAccountResourceID": {
+            "type": "String",
+            "metadata": {
+                "description": "The resource ID of Storage Account to scan. The ID can be found in the Storage Account's <b>Endpoints</b> page.<br/>For example, <b>/subscriptions/1234abcd-3c6d-4347-9019-123456789012/resourceGroups/storage-resource-group/providers/Microsoft.Storage/storageAccounts/protectingstorageaccount</b>"
+            }
+        },
+        "BlobSystemTopicExist": {
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "metadata": {
+                "description": "Select <b>Yes</b> if the system topic of the protecting storage account is already created. Select <b>No</b>, to deploy a new system topic."
+            },
+            "defaultValue": "No",
+            "type": "String"
+        },
+        "BlobSystemTopicName": {
+            "type": "String",
+            "defaultValue": "BlobEventTopic",
+            "metadata": {
+                "description": "The name of the existing Event Grid System Topic associated to the Blob Storage Account or the Event Grid System Topic to be created and associated."
+            }
+        },
+        "UpdateScanResultToBlobMetadata": {
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "type": "String",
+            "defaultValue": "Yes",
+            "metadata": {
+                "description": "Post scan action function requires <b>Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write</b> permission to update blob metadata. Select <b>Yes</b> to update the blob metadata and index tag with the scan result. Select <b>No</b> to update only the blob index tag."
+            }
+        },
+        "ReportObjectKey": {
+            "allowedValues": [
+                "Yes",
+                "No"
+            ],
+            "type": "String",
+            "defaultValue": "No",
+            "metadata": {
+                "description": "Select <b>Yes</b> to report the object keys of the scanned objects to File Storage Security backend services. File Storage Security can then display the object keys of the malicious objects in the response of events API."
+            }
+        },
+        "StackPackageLocation": {
+            "type": "string",
+            "defaultValue": "https://file-storage-security.s3.amazonaws.com",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
+        "Version": {
+            "type": "string",
+            "defaultValue": "latest",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
+        "SharedAccessSignature": {
+            "type": "secureString",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        }
+    },
+    "variables": {
+        "functionPackageLinkPrefix": "[concat(parameters('Version'), '/functions')]",
+        "unifiedSAS": "[if(empty(parameters('SharedAccessSignature')), '', if(startsWith(parameters('SharedAccessSignature'), '?'), parameters('SharedAccessSignature'), concat('?', parameters('SharedAccessSignature'))))]",
+        "blobListenerFunctionPackageLink": "[concat(parameters('StackPackageLocation'), '/', variables('functionPackageLinkPrefix'), '/azure-listener.zip', variables('unifiedSAS'))]",
+        "actionTagFunctionPackageLink": "[concat(parameters('StackPackageLocation'), '/', variables('functionPackageLinkPrefix'), '/azure-action-tag.zip', variables('unifiedSAS'))]",
+
+        "stackUID": "[uniqueString(resourceGroup().id)]",
+        "blobStorageAccountResourceIdSplits": "[split(parameters('BlobStorageAccountResourceID'), '/')]",
+        "blobSubscriptionID": "[variables('blobStorageAccountResourceIdSplits')[2]]",
+        "blobResourceGroupName": "[variables('blobStorageAccountResourceIdSplits')[4]]",
+        "blobAccountName": "[variables('blobStorageAccountResourceIdSplits')[8]]",
+        "blobStorageAccountResourceID": "[resourceId(variables('blobSubscriptionID'), variables('blobResourceGroupName'), 'Microsoft.Storage/storageAccounts', variables('blobAccountName'))]",
+        "blobListenerAppName": "[concat('tmbl0', variables('stackUID'))]",
+        "blobListenerAppAPIVersion": "2018-11-01",
+        "blobListenerApplicationInsightsName": "[concat('tmblai0', variables('stackUID'))]",
+        "blobListenerApplicationInsightsID": "[guid(variables('blobListenerApplicationInsightsName'))]",
+        "blobListenerServerFarmName": "[concat('tmblsf0', variables('stackUID'))]",
+        "blobListenerStorageAccountName": "[concat('tmblsa0', variables('stackUID'))]",
+        "blobEventsDeadLetterContainer": "blob-events-dead-letter",
+        "actionTagAppName": "[concat('tmat0', variables('stackUID'))]",
+        "actionTagAppAPIVersion": "2018-11-01",
+        "actionTagApplicationInsightsName": "[concat('tmatai0', variables('stackUID'))]",
+        "actionTagApplicationInsightsID": "[guid(variables('actionTagApplicationInsightsName'))]",
+        "actionTagServerFarmName": "[concat('tmatsf0', variables('stackUID'))]",
+        "actionTagStorageAccountName": "[concat('tmatsa0', variables('stackUID'))]",
+        "location": "[resourceGroup().location]",
+        "serviceBusDataSenderRoleID": "69a216fc-b8fb-44d8-bc22-1f3c2cd27a39",
+        "scannerQueueNamespace": "[concat(parameters('ScannerQueueNamespace'), '.servicebus.windows.net')]",
+        "blobStorageAccountAPIVersion": "2019-06-01",
+        "scanResultTopicAPIVersion": "2017-04-01",
+        "scanResultTopicNamespaceName": "[concat('tmsrt0', variables('stackUID'))]",
+        "scanResultTopicNamespace": "[concat(variables('scanResultTopicNamespaceName'), '.servicebus.windows.net')]",
+        "scanResultTopicName": "scan-result-topic",
+        "scanResultTopicSubscriptionName": "scan-result",
+        "scanResultSASKeyName": "RootManageSharedAccessKey",
+        "scanResultAuthRuleResourceID": "[resourceId('Microsoft.ServiceBus/namespaces/authorizationRules', variables('scanResultTopicNamespaceName'), variables('scanResultSASKeyName'))]",
+        "blobActionTagRoleDefinitionName": "[guid(variables('stackUID'), 'blobActionTagRoleName')]",
+        "blobListenerRoleDefinitionName": "[guid(variables('stackUID'), 'blobListenerRoleName')]",
+        "blobSystemTopicSubscriptionName": "[concat(variables('blobListenerAppName'), '-trigger')]",
+        "blobActionTagRoleAssignmentUID": "[guid(resourceGroup().id, 'BlobActionTagRoleAssignment')]",
+        "blobListenerRoleAssignmentUID": "[guid(resourceGroup().id, 'BlobListenerRoleAssignment')]",
+        "blobActionTagRoleName": "[concat('FSS-BlobActionTagRole-', uniqueString(string(variables('blobActionTagDataActions')), variables('stackUID')))]",
+        "blobListenerRoleName": "[concat('FSS-BlobListenerRole-', uniqueString(string(variables('blobListenerActions')), string(variables('blobListenerDataActions')), variables('stackUID')))]",
+        "blobSystemTopicSubscriptionID": "[concat('/subscriptions/', variables('blobSubscriptionID'), '/resourcegroups/', variables('blobResourceGroupName'), '/providers/Microsoft.EventGrid/systemTopics/', parameters('BlobSystemTopicName'), '/eventSubscriptions/', variables('blobSystemTopicSubscriptionName'))]",
+        "managementRoleName": "[guid(variables('stackUID'), 'ManagementRole')]",
+        "managementRoleAssignmentUID": "[guid(variables('stackUID'), 'ManagementRoleAssignment', parameters('FileStorageSecurityServicePrincipalID'))]",
+        "functionsWorkerProcessCount": "10",
+        "blobListenerActions": [
+            "Microsoft.Storage/storageAccounts/blobServices/generateUserDelegationKey/action"
+        ],
+        "blobListenerDataActions": [
+            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read"
+        ],
+        "blobIndexTagDataActions": [
+            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/read",
+            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/write"
+        ],
+        "blobDataActions": [
+            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/read",
+            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/write",
+            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+            "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write"
+        ],
+        "blobActionTagDataActions": "[if(equals(parameters('UpdateScanResultToBlobMetadata'), 'Yes'), variables('blobDataActions'), variables('blobIndexTagDataActions'))]",
+        "updateScanResultToBlobMetadata": "[if(equals(parameters('UpdateScanResultToBlobMetadata'), 'Yes'), 'True', 'False')]",
+        "reportObjectKey": "[if(equals(parameters('ReportObjectKey'), 'Yes'), 'True', 'False')]",
+        "functionsWarmupLogicAppName": "functionsWarmUpLogicApp"
+    },
+    "resources": [
+        {
+            "apiVersion": "2019-05-01",
+            "name": "StorageBlobRoleAssignment",
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[variables('blobResourceGroupName')]",
+            "subscriptionId": "[variables('blobSubscriptionID')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "type": "Microsoft.Authorization/roleDefinitions",
+                            "apiVersion": "2018-07-01",
+                            "name": "[variables('blobActionTagRoleDefinitionName')]",
+                            "properties": {
+                                "roleName": "[variables('blobActionTagRoleName')]",
+                                "description": "The Role has Blob Writer permission",
+                                "type": "customRole",
+                                "isCustom": true,
+                                "permissions": [
+                                    {
+                                        "dataActions": "[variables('blobActionTagDataActions')]"
+                                    }
+                                ],
+                                "assignableScopes": [
+                                    "[parameters('BlobStorageAccountResourceID')]"
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleDefinitions",
+                            "apiVersion": "2018-07-01",
+                            "name": "[variables('blobListenerRoleDefinitionName')]",
+                            "properties": {
+                                "roleName": "[variables('blobListenerRoleName')]",
+                                "description": "The Role has Blob read and generate delegation key permission",
+                                "type": "customRole",
+                                "isCustom": true,
+                                "permissions": [
+                                    {
+                                        "actions": "[variables('blobListenerActions')]",
+                                        "dataActions": "[variables('blobListenerDataActions')]"
+                                    }
+                                ],
+                                "assignableScopes": [
+                                    "[parameters('BlobStorageAccountResourceID')]"
+                                ]
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2018-09-01-preview",
+                            "name": "[variables('blobListenerRoleAssignmentUID')]",
+                            "scope": "[concat('Microsoft.Storage/storageAccounts/', variables('blobAccountName'))]",
+                            "dependsOn": [
+                                "[variables('blobListenerRoleDefinitionName')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('blobListenerRoleDefinitionName'))]",
+                                "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('blobListenerAppName')), variables('blobListenerAppAPIVersion'), 'full').identity.principalId]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.Authorization/roleAssignments",
+                            "apiVersion": "2018-09-01-preview",
+                            "name": "[variables('blobActionTagRoleAssignmentUID')]",
+                            "scope": "[concat('Microsoft.Storage/storageAccounts/', variables('blobAccountName'))]",
+                            "dependsOn": [
+                                "[variables('blobActionTagRoleDefinitionName')]"
+                            ],
+                            "properties": {
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('blobActionTagRoleDefinitionName'))]",
+                                "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('actionTagAppName')), variables('actionTagAppAPIVersion'), 'full').identity.principalId]",
+                                "principalType": "ServicePrincipal"
+                            }
+                        }
+                    ]
+                },
+                "parameters": {}
+            }
+        },
+        {
+            "apiVersion": "[variables('scanResultTopicAPIVersion')]",
+            "name": "[variables('scanResultTopicNamespaceName')]",
+            "type": "Microsoft.ServiceBus/Namespaces",
+            "location": "[variables('location')]",
+            "kind": "Messaging",
+            "sku": {
+                "name": "Standard"
+            },
+            "resources": [
+                {
+                    "apiVersion": "[variables('scanResultTopicAPIVersion')]",
+                    "name": "[variables('scanResultTopicName')]",
+                    "type": "Topics",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.ServiceBus/namespaces/', variables('scanResultTopicNamespaceName'))]"
+                    ],
+                    "properties": {
+                        "path": "[variables('scanResultTopicName')]"
+                    },
+                    "resources": [
+                        {
+                            "apiVersion": "[variables('scanResultTopicAPIVersion')]",
+                            "name": "[variables('scanResultTopicSubscriptionName')]",
+                            "type": "Subscriptions",
+                            "dependsOn": [
+                                "[variables('scanResultTopicName')]"
+                            ],
+                            "properties": {
+                                "lockDuration": "PT30S",
+                                "defaultMessageTimeToLive": "PT1H",
+                                "maxDeliveryCount": 20,
+                                "deadLetteringOnFilterEvaluationExceptions": true,
+                                "deadLetteringOnMessageExpiration": true
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2018-09-01-preview",
+            "name": "[guid(resourceGroup().id, parameters('ScannerIdentityPrincipalID'), 'ServiceBusDataSenderRoleAssignment')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.ServiceBus/namespaces/Topics', variables('scanResultTopicNamespaceName'), variables('scanResultTopicName'))]"
+            ],
+            "scope": "[concat('Microsoft.ServiceBus/namespaces/', variables('scanResultTopicNamespaceName'), '/topics/', variables('scanResultTopicName'))]",
+            "properties": {
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('serviceBusDataSenderRoleID'))]",
+                "principalId": "[parameters('ScannerIdentityPrincipalID')]",
+                "principalType": "ServicePrincipal"
+            }
+        },
+        {
+            "name": "[variables('blobListenerApplicationInsightsName')]",
+            "type": "microsoft.insights/components",
+            "location": "[variables('location')]",
+            "apiVersion": "2014-08-01",
+            "properties": {
+                "Application_Type": "web",
+                "ApplicationId": "[variables('blobListenerApplicationInsightsID')]"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2021-04-01",
+            "name": "[variables('blobListenerStorageAccountName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage",
+            "properties": {
+                "minimumTlsVersion": "TLS1_2"
+            },
+            "resources": [
+                {
+                    "type": "blobServices/containers",
+                    "apiVersion": "2021-04-01",
+                    "name": "[concat('default/', variables('blobEventsDeadLetterContainer'))]",
+                    "dependsOn": [
+                        "[variables('blobListenerStorageAccountName')]"
+                    ],
+                    "properties": {
+                        "publicAccess": "None"
+                    }
+                }
+            ]
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('blobListenerServerFarmName')]",
+            "kind": "linux",
+            "properties": {
+                "reserved": true
+            },
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "[variables('blobListenerAppAPIVersion')]",
+            "name": "[variables('blobListenerAppName')]",
+            "location": "[variables('location')]",
+            "kind": "functionapp,linux",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('blobListenerServerFarmName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('blobListenerStorageAccountName'))]"
+            ],
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(variables('blobListenerAppName'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(variables('blobListenerAppName'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('blobListenerServerFarmName'))]",
+                "reserved": true,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "python"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('blobListenerApplicationInsightsName')), '2020-02-02-preview').InstrumentationKey]"
+                        },
+                        {
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('blobListenerApplicationInsightsName')), '2020-02-02-preview').ConnectionString]"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('blobListenerStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('blobListenerStorageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('blobListenerStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('blobListenerStorageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[toLower(variables('blobListenerAppName'))]"
+                        },
+                        {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "[variables('blobListenerFunctionPackageLink')]"
+                        },
+                        {
+                            "name": "SCANNER_QUEUE_NAMESPACE",
+                            "value": "[variables('scannerQueueNamespace')]"
+                        },
+                        {
+                            "name": "SCAN_RESULT_TOPIC_NAMESPACE",
+                            "value": "[variables('scanResultTopicNamespace')]"
+                        },
+                        {
+                            "name": "STORAGE_STACK_NAME",
+                            "value": "[resourceGroup().name]"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_PROCESS_COUNT",
+                            "value": "[variables('functionsWorkerProcessCount')]"
+                        },
+                        {
+                            "name": "REPORT_OBJECT_KEY",
+                            "value": "[variables('reportObjectKey')]"
+                        }
+                    ],
+                    "use32BitWorkerProcess": false,
+                    "linuxFxVersion": "PYTHON|3.8"
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": false,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 1536,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": true,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "name": "[variables('actionTagApplicationInsightsName')]",
+            "type": "microsoft.insights/components",
+            "location": "[variables('location')]",
+            "apiVersion": "2014-08-01",
+            "properties": {
+                "Application_Type": "web",
+                "ApplicationId": "[variables('actionTagApplicationInsightsID')]"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "apiVersion": "2019-06-01",
+            "name": "[variables('actionTagStorageAccountName')]",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "kind": "Storage",
+            "properties": {
+                "minimumTlsVersion": "TLS1_2"
+            }
+        },
+        {
+            "type": "Microsoft.Web/serverfarms",
+            "apiVersion": "2020-06-01",
+            "name": "[variables('actionTagServerFarmName')]",
+            "kind": "linux",
+            "properties": {
+                "reserved": true
+            },
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y"
+            }
+        },
+        {
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "[variables('actionTagAppAPIVersion')]",
+            "name": "[variables('actionTagAppName')]",
+            "location": "[variables('location')]",
+            "kind": "functionapp,linux",
+            "identity": {
+                "type": "SystemAssigned"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/serverfarms', variables('actionTagServerFarmName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('actionTagStorageAccountName'))]"
+            ],
+            "properties": {
+                "enabled": true,
+                "hostNameSslStates": [
+                    {
+                        "name": "[concat(variables('actionTagAppName'), '.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Standard"
+                    },
+                    {
+                        "name": "[concat(variables('actionTagAppName'), '.scm.azurewebsites.net')]",
+                        "sslState": "Disabled",
+                        "hostType": "Repository"
+                    }
+                ],
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('actionTagServerFarmName'))]",
+                "reserved": true,
+                "isXenon": false,
+                "hyperV": false,
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "FUNCTIONS_EXTENSION_VERSION",
+                            "value": "~3"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_RUNTIME",
+                            "value": "python"
+                        },
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('actionTagApplicationInsightsName')), '2020-02-02-preview').InstrumentationKey]"
+                        },
+                        {
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(resourceId('microsoft.insights/components', variables('actionTagApplicationInsightsName')), '2020-02-02-preview').ConnectionString]"
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('actionTagStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('actionTagStorageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('actionTagStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('actionTagStorageAccountName')), '2019-06-01').keys[0].value)]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTSHARE",
+                            "value": "[toLower(variables('actionTagAppName'))]"
+                        },
+                        {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "[variables('actionTagFunctionPackageLink')]"
+                        },
+                        {
+                            "name": "BUS_TOPIC_CONNECTION_STR",
+                            "value": "[listkeys(variables('scanResultAuthRuleResourceID'), variables('scanResultTopicAPIVersion')).primaryConnectionString]"
+                        },
+                        {
+                            "name": "SCAN_RESULT_TOPIC_NAME",
+                            "value": "[variables('scanResultTopicName')]"
+                        },
+                        {
+                            "name": "SCAN_RESULT_SUBSCRIPTION_NAME",
+                            "value": "[variables('scanResultTopicSubscriptionName')]"
+                        },
+                        {
+                            "name": "FUNCTIONS_WORKER_PROCESS_COUNT",
+                            "value": "[variables('functionsWorkerProcessCount')]"
+                        },
+                        {
+                            "name": "UPDATE_SCAN_RESULT_TO_BLOB_METADATA",
+                            "value": "[variables('updateScanResultToBlobMetadata')]"
+                        }
+                    ],
+                    "use32BitWorkerProcess": false,
+                    "linuxFxVersion": "PYTHON|3.8"
+                },
+                "scmSiteAlsoStopped": false,
+                "clientAffinityEnabled": false,
+                "clientCertEnabled": false,
+                "hostNamesDisabled": false,
+                "containerSize": 1536,
+                "dailyMemoryTimeQuota": 0,
+                "httpsOnly": true,
+                "redundancyMode": "None"
+            }
+        },
+        {
+            "type": "Microsoft.Logic/workflows",
+            "apiVersion": "2019-05-01",
+            "name": "[variables('functionsWarmupLogicAppName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "state": "Enabled",
+                "definition": {
+                    "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "triggers": {
+                        "Recurrence": {
+                            "recurrence": {
+                                "frequency": "Minute",
+                                "interval": 10
+                            },
+                            "type": "Recurrence"
+                        }
+                    },
+                    "actions": {
+                        "getActionTagEndpoint": {
+                            "type": "Http",
+                            "inputs": {
+                                "method": "GET",
+                                "uri": "[concat('https://', reference(variables('actionTagAppName')).defaultHostName)]"
+                            }
+                        },
+                        "getBlobListenerEndpoint": {
+                            "type": "Http",
+                            "inputs": {
+                                "method": "GET",
+                                "uri": "[concat('https://', reference(variables('blobListenerAppName')).defaultHostName)]"
+                            }
+                        }
+                    },
+                    "outputs": {}
+                },
+                "parameters": {}
+            }
+        },
+        {
+            "apiVersion": "2017-05-10",
+            "name": "BlobSystemTopicTemplate",
+            "dependsOn": [
+                "[resourceId('Microsoft.Logic/workflows', variables('functionsWarmupLogicAppName'))]"
+            ],
+            "type": "Microsoft.Resources/deployments",
+            "resourceGroup": "[variables('blobResourceGroupName')]",
+            "subscriptionId": "[variables('blobSubscriptionID')]",
+            "properties": {
+                "mode": "Incremental",
+                "template": {
+                    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                    "contentVersion": "1.0.0.0",
+                    "parameters": {},
+                    "variables": {},
+                    "resources": [
+                        {
+                            "condition": "[equals(parameters('BlobSystemTopicExist'), 'No')]",
+                            "type": "Microsoft.EventGrid/systemTopics",
+                            "apiVersion": "2020-04-01-preview",
+                            "name": "[parameters('BlobSystemTopicName')]",
+                            "location": "[reference(parameters('BlobStorageAccountResourceID'), variables('blobStorageAccountAPIVersion'), 'Full').location]",
+                            "properties": {
+                                "source": "[parameters('BlobStorageAccountResourceID')]",
+                                "topicType": "Microsoft.Storage.StorageAccounts"
+                            }
+                        },
+                        {
+                            "type": "Microsoft.EventGrid/systemTopics/eventSubscriptions",
+                            "apiVersion": "2020-04-01-preview",
+                            "name": "[concat(parameters('BlobSystemTopicName'), '/', variables('blobSystemTopicSubscriptionName'))]",
+                            "dependsOn": [
+                                "[parameters('BlobSystemTopicName')]"
+                            ],
+                            "properties": {
+                                "destination": {
+                                    "properties": {
+                                        "resourceId": "[resourceId('Microsoft.Web/sites/functions', variables('blobListenerAppName'), 'BlobListener')]",
+                                        "maxEventsPerBatch": 1,
+                                        "preferredBatchSizeInKilobytes": 64
+                                    },
+                                    "endpointType": "AzureFunction"
+                                },
+                                "filter": {
+                                    "includedEventTypes": [
+                                        "Microsoft.Storage.BlobCreated",
+                                        "Microsoft.Storage.BlobRenamed"
+                                    ]
+                                },
+                                "eventDeliverySchema": "EventGridSchema",
+                                "retryPolicy": {
+                                    "maxDeliveryAttempts": 5,
+                                    "eventTimeToLiveInMinutes": 1440
+                                },
+                                "deadletterdestination": {
+                                    "endpointType": "StorageBlob",
+                                    "properties": {
+                                        "resourceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('blobListenerStorageAccountName'))]",
+                                        "blobContainerName": "[variables('blobEventsDeadLetterContainer')]"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                },
+                "parameters": {}
+            }
+        },
+        {
+            "type": "Microsoft.Authorization/roleDefinitions",
+            "apiVersion": "2018-07-01",
+            "name": "[variables('managementRoleName')]",
+            "properties": {
+                "roleName": "[concat('FSSManagementRole-', variables('managementRoleName'))]",
+                "description": "FSS management role",
+                "type": "customRole",
+                "isCustom": true,
+                "permissions": [
+                    {
+                        "actions": [
+                            "Microsoft.Resources/subscriptions/resourceGroups/read",
+                            "Microsoft.Resources/subscriptions/resourcegroups/deployments/read",
+                            "Microsoft.Resources/subscriptions/resourcegroups/deployments/operations/read",
+                            "Microsoft.Resources/subscriptions/resourcegroups/deployments/operationstatuses/read",
+                            "Microsoft.Resources/subscriptions/resourcegroups/resources/read",
+
+                            "Microsoft.Web/sites/Read",
+                            "Microsoft.Web/sites/config/list/action",
+                            "Microsoft.Web/sites/config/Read",
+                            "Microsoft.Web/sites/config/Write",
+                            "Microsoft.Web/sites/functions/read",
+                            "Microsoft.Web/sites/functions/write",
+                            "Microsoft.Web/sites/host/sync/action",
+                            "Microsoft.Web/sites/host/listsyncstatus/action",
+                            "Microsoft.Web/sites/metrics/read",
+                            "Microsoft.Web/sites/restart/Action",
+                            "Microsoft.Web/sites/syncfunctiontriggers/action",
+                            "Microsoft.Web/sites/usages/read",
+
+                            "Microsoft.Authorization/roleDefinitions/read",
+                            "Microsoft.Authorization/roleAssignments/read",
+
+                            "Microsoft.ManagedIdentity/userAssignedIdentities/read",
+
+                            "Microsoft.Resources/deployments/read",
+                            "Microsoft.Resources/deployments/whatIf/action",
+                            "Microsoft.Resources/deployments/exportTemplate/action",
+                            "Microsoft.Resources/deployments/operations/read",
+                            "Microsoft.Resources/deployments/operationstatuses/read",
+
+                            "Microsoft.Storage/storageAccounts/read",
+
+                            "Microsoft.Insights/Components/Read",
+                            "Microsoft.Insights/Components/Query/Read",
+                            "Microsoft.Insights/Logs/Read"
+                        ]
+                    }
+                ],
+                "assignableScopes": [
+                    "[resourceGroup().id]"
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2018-09-01-preview",
+            "name": "[variables('managementRoleAssignmentUID')]",
+            "condition": "[not(empty(parameters('FileStorageSecurityServicePrincipalID')))]",
+            "dependsOn": [ "[variables('managementRoleName')]" ],
+            "properties": {
+                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('managementRoleName'))]",
+                "principalId": "[parameters('FileStorageSecurityServicePrincipalID')]",
+                "principalType": "ServicePrincipal"
+            }
+        }
+    ],
+    "outputs": {
+        "TenantID": {
+            "type": "string",
+            "value": "[subscription().tenantId]"
+        },
+        "StorageStackResourceGroupID": {
+            "type": "string",
+            "value": "[resourceGroup().id]"
+        },
+        "CloudOneRegion": {
+            "type": "string",
+            "value": "[parameters('CloudOneRegion')]"
+        },
+        "BlobStorageAccountResourceID": {
+            "type": "string",
+            "value": "[variables('blobStorageAccountResourceID')]"
+        },
+        "ScanResultTopicResourceID": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.ServiceBus/namespaces/topics', variables('scanResultTopicNamespaceName'), variables('scanResultTopicName'))]"
+        },
+        "BlobListenerResourceID": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Web/sites', variables('blobListenerAppName'))]"
+        },
+        "BlobListenerIdentityPrincipalID": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.Web/sites', variables('blobListenerAppName')), variables('blobListenerAppAPIVersion'), 'full').identity.principalId]"
+        },
+        "PostScanActionTagResourceID": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Web/sites', variables('actionTagAppName'))]"
+        },
+        "BlobActionTagRoleDefinitionName": {
+            "type": "string",
+            "value": "[variables('blobActionTagRoleDefinitionName')]"
+        },
+        "BlobListenerRoleDefinitionName": {
+            "type": "string",
+            "value": "[variables('blobListenerRoleDefinitionName')]"
+        },
+        "BlobActionTagRoleAssignmentID": {
+            "type": "string",
+            "value": "[concat(variables('blobStorageAccountResourceID'), '/providers/Microsoft.Authorization/roleAssignments/', variables('blobActionTagRoleAssignmentUID'))]"
+        },
+        "BlobListenerRoleAssignmentID": {
+            "type": "string",
+            "value": "[concat(variables('blobStorageAccountResourceID'), '/providers/Microsoft.Authorization/roleAssignments/', variables('blobListenerRoleAssignmentUID'))]"
+        },
+        "BlobSystemTopicSubscriptionID": {
+            "type": "string",
+            "value": "[variables('blobSystemTopicSubscriptionID')]"
+        },
+        "BlobSystemTopicDeadLetterStorageID": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Storage/storageAccounts/blobServices/containers',variables('blobListenerStorageAccountName'), 'default', variables('blobEventsDeadLetterContainer'))]"
+        },
+        "BlobScanResultSubscriptionDeadLetterQueueID": {
+            "type": "string",
+            "value": "[concat(resourceId('Microsoft.ServiceBus/Namespaces/Topics/Subscriptions', variables('scanResultTopicNamespaceName'), variables('scanResultTopicName'), variables('scanResultTopicSubscriptionName')), '/$DeadLetterQueue')]"
+        }
+    }
+}
