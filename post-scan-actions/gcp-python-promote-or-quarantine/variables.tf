@@ -1,10 +1,17 @@
-variable "project_settings" {
-  type = object({
-    project_id = string
-    region = string
-    plugin_prefix = string
-  })
+variable "project_id" {
+  type = string
+  description = "ID of the GCP project which the plugin will be deployed"
   sensitive = true
+}
+
+variable "region" {
+  type = string
+  description = "GCP region to deploy the plugin"
+}
+
+variable "function_perfix" {
+  type = string
+  description = "GCP function prefix to use for the plugin"
 }
 
 variable "deployment_name" {

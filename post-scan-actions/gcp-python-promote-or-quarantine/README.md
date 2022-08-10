@@ -1,7 +1,5 @@
 # Cloud One File Storage Security Post Scan Action for GCP - Promote or Quarantine
 
-**Warning: GCP solution is not yet in GA phase.**
-
 ## Prerequisites
 
 1. **Install supporting tools**
