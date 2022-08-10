@@ -1,8 +1,6 @@
-project_settings = {
-    project_id = "<GCP_PROJECT_ID>" // e.g. test-project-998877
-    region = "<GCP_REGION>" // e.g. us-central1
-    plugin_prefix = "<CLOUD_FUNCTION_PREFIX>" // e.g. test-for-fss
-}
+project_id = "<GCP_PROJECT_ID>" // e.g. test-project-998877
+region = "<GCP_REGION>" // e.g. us-central1
+plugin_prefix = "<CLOUD_FUNCTION_PREFIX>" // e.g. test-for-fss
 
 deployment_name = "<DEPLOYMENT_NAME>" // e.g. test-deployment
 

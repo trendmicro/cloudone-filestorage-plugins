@@ -8,8 +8,8 @@ terraform {
 }
 
 provider "google" {
-  project = var.project_settings.project_id
-  region = var.project_settings.region
+  project = var.project_id
+  region = var.region
 }
 
 resource "random_id" "deploy_suffix" {
@@ -23,13 +23,13 @@ resource "random_id" "deploy_suffix" {
 
 resource "google_service_account" "service_account" {
   account_id = "qua-pro-plugin-sa-${lower(random_id.deploy_suffix.hex)}"
-  display_name = "Quarantine/Promote plugin Service Account"
-  project = var.project_settings.project_id
+  display_name = "Quarantine/Promote plugin Service Account ${random_id.deploy_suffix.hex}"
+  project = var.project_id
 }
 
 resource "google_project_iam_custom_role" "promote_and_quarantine_bucket_role" {
   role_id = "plugin_storage_bucket_write_${lower(random_id.deploy_suffix.hex)}"
-  title = "Promote/Quarantine Bucket Write"
+  title = "Promote/Quarantine Bucket Write ${random_id.deploy_suffix.hex}"
   permissions = [
     "storage.objects.create",
     "storage.objects.delete",
@@ -39,7 +39,7 @@ resource "google_project_iam_custom_role" "promote_and_quarantine_bucket_role" {
 
 resource "google_project_iam_custom_role" "scanning_bucket_access_role" {
   role_id = "plugin_storage_bucket_access_${lower(random_id.deploy_suffix.hex)}"
-  title = "Scanning Bucket Access"
+  title = "Scanning Bucket Access ${random_id.deploy_suffix.hex}"
   permissions = var.promote_mode == "move" || var.quarantine_mode == "move" ? [
     "storage.objects.delete",
     "storage.objects.get",
@@ -51,33 +51,42 @@ resource "google_project_iam_custom_role" "scanning_bucket_access_role" {
 resource "google_storage_bucket_iam_binding" "binding_promote_bucket" {
   count = var.promote_bucket != "" ? 1 : 0
   bucket = var.promote_bucket
-  role = google_project_iam_custom_role.promote_and_quarantine_bucket_role.role_id
+  role = google_project_iam_custom_role.promote_and_quarantine_bucket_role.name
   members = [
     "serviceAccount:${google_service_account.service_account.email}",
+  ]
+  depends_on = [
+    google_project_iam_custom_role.promote_and_quarantine_bucket_role
   ]
 }
 
 resource "google_storage_bucket_iam_binding" "binding_quarantine_bucket" {
   count = var.quarantine_bucket != "" ? 1 : 0
   bucket = var.quarantine_bucket
-  role = google_project_iam_custom_role.promote_and_quarantine_bucket_role.role_id
+  role = google_project_iam_custom_role.promote_and_quarantine_bucket_role.name
   members = [
     "serviceAccount:${google_service_account.service_account.email}",
+  ]
+  depends_on = [
+    google_project_iam_custom_role.promote_and_quarantine_bucket_role
   ]
 }
 
 resource "google_storage_bucket_iam_binding" "binding_scanning_bucket" {
   bucket = var.scanning_bucket
-  role = google_project_iam_custom_role.scanning_bucket_access_role.role_id
+  role = google_project_iam_custom_role.scanning_bucket_access_role.name
   members = [
     "serviceAccount:${google_service_account.service_account.email}",
+  ]
+  depends_on = [
+    google_project_iam_custom_role.scanning_bucket_access_role
   ]
 }
 
 resource "google_storage_bucket" "artifacts_bucket" {
   name = "artifacts-promote-and-quarantine-plugin-${lower(random_id.deploy_suffix.hex)}"
-  location = var.project_settings.region
-  project = var.project_settings.project_id
+  location = var.region
+  project = var.project_id
   uniform_bucket_level_access = true
   force_destroy = true
 }
@@ -89,17 +98,17 @@ resource "google_storage_bucket_object" "archive" {
 }
 
 resource "google_cloudfunctions_function" "promote_and_quarantining_plugin" {
-  name = "${var.project_settings.plugin_prefix}-promote-and-quarantine-${random_id.deploy_suffix.hex}"
-  description = "Promote and Quarantine plugin"
+  name = "${var.plugin_prefix}-promote-and-quarantine-${random_id.deploy_suffix.hex}"
+  description = "Promote and Quarantine plugin ${random_id.deploy_suffix.hex}"
   source_archive_bucket = google_storage_bucket.artifacts_bucket.name
   source_archive_object = "gcp-promote-and-quarantine-plugin.zip"
   runtime = "python38"
   entry_point = "main"
-  project = var.project_settings.project_id
+  project = var.project_id
 
   event_trigger {
     event_type = "providers/cloud.pubsub/eventTypes/topic.publish"
-    resource = "projects/${var.project_settings.project_id}/topics/${var.scan_result_topic}"
+    resource = "projects/${var.project_id}/topics/${var.scan_result_topic}"
   }
 
   environment_variables = {
