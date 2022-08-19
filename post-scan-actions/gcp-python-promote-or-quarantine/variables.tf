@@ -9,7 +9,7 @@ variable "region" {
   description = "GCP region to deploy the plugin"
 }
 
-variable "function_perfix" {
+variable "plugin_prefix" {
   type = string
   description = "GCP function prefix to use for the plugin"
 }
