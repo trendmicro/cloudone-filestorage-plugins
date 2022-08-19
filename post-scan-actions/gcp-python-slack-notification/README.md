@@ -1,6 +1,5 @@
 # Cloud One File Storage Security Post Scan Action for GCP - Slack notifications
 
-**:warning: Note: File Storage Security for GCP solution is in preview.**
 
 ## Prerequisites
 
