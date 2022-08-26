@@ -14,7 +14,7 @@ Select the project in which you want to deploy the slack notification Cloud func
 
 <walkthrough-project-setup></walkthrough-project-setup>
 
-Copy and execute the script in the Cloud Shell:
+Copy and execute the script in the Cloud Shell or click <walkthrough-open-cloud-shell-button></walkthrough-open-cloud-shell-button>:
 
 ```
 gcloud config set project <walkthrough-project-id/>
@@ -53,7 +53,7 @@ where,
 
 ### Deployment through serverless.yml file
 
-You could hardcode these values in the <walkthrough-editor-open-file filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-slack-notification/serverless.yml">serverless.yml</walkthrough-editor-open-file> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
+You could hardcode these values in the <walkthrough-editor-select-line filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-slack-notification/serverless.yml" startLine="6" endLine="14">serverless.yml</walkthrough-editor-select-line> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
 
 Simply replace, the `params` section of the serverless.yml with the right values and run `serverless deploy` as shown in the next step.
 
@@ -140,5 +140,7 @@ Check Slack to see new notifications. To test your deployment, you'll need to ge
 The tags indicate that File Storage Security scanned the file and tagged it as malware. The scan results are also available in the console on the Scan Activity page.
 
 If all the steps were successful, you should get a Slack notification on the <SLACK_CHANNEL> specified.
+
+<walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
 --------------------------------
