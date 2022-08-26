@@ -24,13 +24,44 @@ gcloud config set project <walkthrough-project-id/>
 
 ## Configure Google Cloud function
 
-Specify the following fields in your deployment command  and execute the deployment script:
+Build your deployment command by substituting the following fields in your sample deployment command. An example/default value for these fields can be found in the field description below.
+
+### Deployment by command-line
+
+Replace the values in the following command and store the output for the next step
+
+```sh
+    serverless deploy -s prod \
+    --param="TEAMS_URL=<TEAMS_URL>" \
+    --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" \
+    --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" \
+    --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" \
+    --param="EVENT_TYPE=<EVENT_TYPE>"
+```
+
+where,
 
 - **TEAMS_URL** - The incoming webhook URL generated from MS Teams Channel connectors. This generated URL can be created by following the step-by-step guide to creating an Incoming Webhook described here - [How to configure and use Incoming Webhooks in Microsoft Teams](https://techcommunity.microsoft.com/t5/microsoft-365-pnp-blog/how-to-configure-and-use-incoming-webhooks-in-microsoft-teams/ba-p/2051118).
 - **DEPLOYMENT_REGION** - The region where the File Storage Security Storage stack was deployed.
 - **GCP_PROJECT_ID** - Project ID of the GCP project.
 - **TRIGGER_RESOURCE** - Topic name of the scan result topic name. Example: `projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>`
 - **EVENT_TYPE** - Optional. Defaults to `providers/cloud.pubsub/eventTypes/topic.publish`
+
+### Deployment through serverless.yml file
+
+You could hardcode these values in the <walkthrough-editor-open-file filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-slack-notification/serverless.yml">serverless.yml</walkthrough-editor-open-file> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
+
+Simply replace, the `params` section of the serverless.yml with the right values and run `serverless deploy` as shown in the next step.
+
+```yaml
+params:
+  prod:
+    TEAMS_URL: <TEAMS_URL>
+    DEPLOYMENT_REGION: <GCP_DEPLOYMENT_REGION>
+    GCP_PROJECT_ID: <PROJECT_ID>
+    EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
+    TRIGGER_RESOURCE: projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>
+```
 
 --------------------------------
 
@@ -42,7 +73,7 @@ Specify the following fields in your deployment command  and execute the deploym
     npm install -g serverless
     ```
 
-2. Deploy Serverless project.
+2. Deploy Serverless project using the command built in the previous step.
 
     ```sh
     serverless plugin install -n serverless-google-cloudfunctions
