@@ -49,7 +49,7 @@ where,
 
 ### Deployment through serverless.yml file
 
-You could hardcode these values in the <walkthrough-editor-open-file filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-slack-notification/serverless.yml">serverless.yml</walkthrough-editor-open-file> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
+You could hardcode these values in the <walkthrough-editor-open-file filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-teams-notification/serverless.yml">serverless.yml</walkthrough-editor-open-file> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
 
 Simply replace, the `params` section of the serverless.yml with the right values and run `serverless deploy` as shown in the next step.
 
@@ -73,18 +73,34 @@ params:
     npm install -g serverless
     ```
 
-2. Deploy Serverless project using the command built in the previous step.
+2. Deploy Serverless project.
 
-    ```sh
-    serverless plugin install -n serverless-google-cloudfunctions
+    This cloudone plugin requires some dependencies from the serverless plugin ecosystem, like `serverless-google-cloudfunctions` before we can deploy this project.
 
-    serverless deploy -s prod \
-    --param="TEAMS_URL=<TEAMS_URL>" \
-    --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" \
-    --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" \
-    --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" \
-    --param="EVENT_TYPE=<EVENT_TYPE>"
-    ```
+    - Install serverless dependencies
+
+        ```sh
+        serverless plugin install -n serverless-google-cloudfunctions
+        ```
+
+    - Deploy your serverless project
+
+        - Through command-line
+
+            ```sh
+            serverless deploy -s prod \
+            --param="TEAMS_URL=<TEAMS_URL>" \
+            --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" \
+            --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" \
+            --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" \
+            --param="EVENT_TYPE=<EVENT_TYPE>"
+            ```
+
+        - Using `serverless.yml` and the values provided within the file
+
+            ```sh
+            serverless deploy -s prod
+            ```
 
 --------------------------------
 
