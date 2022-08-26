@@ -49,13 +49,13 @@ Specify the following fields in your deployment command  and execute the deploym
     ```sh
     serverless plugin install -n serverless-google-cloudfunctions
 
-    serverless deploy -s prod /
-    --param="SLACK_URL=<SLACK_URL>" /
-    --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" /
-    --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" /
-    --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" /
-    --param="EVENT_TYPE=<EVENT_TYPE>" /
-    --param="SLACK_CHANNEL=<SLACK_CHANNEL>" /
+    serverless deploy -s prod \
+    --param="SLACK_URL=<SLACK_URL>" \
+    --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" \
+    --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" \
+    --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" \
+    --param="EVENT_TYPE=<EVENT_TYPE>" \
+    --param="SLACK_CHANNEL=<SLACK_CHANNEL>" \
     --param="SLACK_USERNAME=<SLACK_USERNAME>"
     ```
 
