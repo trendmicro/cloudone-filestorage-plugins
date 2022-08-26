@@ -24,7 +24,24 @@ gcloud config set project <walkthrough-project-id/>
 
 ## Configure Google Cloud function
 
-Specify the following fields in your deployment command  and execute the deployment script:
+Build your deployment command by substituting the following fields in your sample deployment command. An example/default value for these fields can be found in the field description below.
+
+### Deployment by command-line
+
+Replace the values in the following command and store the output for the next step
+
+```sh
+    serverless deploy -s prod \
+    --param="SLACK_URL=<SLACK_URL>" \
+    --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" \
+    --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" \
+    --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" \
+    --param="EVENT_TYPE=<EVENT_TYPE>" \
+    --param="SLACK_CHANNEL=<SLACK_CHANNEL>" \
+    --param="SLACK_USERNAME=<SLACK_USERNAME>"
+```
+
+where,
 
 - **SLACK_URL** - The incoming webhook URL generated from Slack Apps. Example: `https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX`
 - **DEPLOYMENT_REGION** - The region where the File Storage Security Storage stack was deployed.
@@ -33,6 +50,24 @@ Specify the following fields in your deployment command  and execute the deploym
 - **EVENT_TYPE** - Optional. Defaults to `providers/cloud.pubsub/eventTypes/topic.publish`
 - **SLACK_CHANNEL** - Optional. Defaults to ***#notifications*** Slack channel
 - **SLACK_USERNAME** - Optional. Defaults to "*Cloud One File Storage Security*"
+
+### Deployment through serverless.yml file
+
+You could hardcode these values in the <walkthrough-editor-open-file filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-slack-notification/serverless.yml">serverless.yml</walkthrough-editor-open-file> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
+
+Simply replace, the `params` section of the serverless.yml with the right values and run `serverless deploy` as shown in the next step.
+
+```yaml
+params:
+  prod:
+    SLACK_URL: <SLACK_URL>
+    SLACK_CHANNEL: notifications
+    SLACK_USERNAME: Cloud One File Storage Security
+    DEPLOYMENT_REGION: <GCP_DEPLOYMENT_REGION>
+    GCP_PROJECT_ID: <PROJECT_ID>
+    EVENT_TYPE: providers/cloud.pubsub/eventTypes/topic.publish
+    TRIGGER_RESOURCE: projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>
+```
 
 --------------------------------
 
@@ -46,18 +81,34 @@ Specify the following fields in your deployment command  and execute the deploym
 
 2. Deploy Serverless project.
 
-    ```sh
-    serverless plugin install -n serverless-google-cloudfunctions
+    This cloudone plugin requires some dependencies from the serverless plugin ecosystem, like `serverless-google-cloudfunctions` before we can deploy this project.
 
-    serverless deploy -s prod \
-    --param="SLACK_URL=<SLACK_URL>" \
-    --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" \
-    --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" \
-    --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" \
-    --param="EVENT_TYPE=<EVENT_TYPE>" \
-    --param="SLACK_CHANNEL=<SLACK_CHANNEL>" \
-    --param="SLACK_USERNAME=<SLACK_USERNAME>"
-    ```
+    - Install serverless dependencies
+
+        ```sh
+        serverless plugin install -n serverless-google-cloudfunctions
+        ```
+
+    - Deploy your serverless project
+
+        - Through command-line
+
+            ```sh
+            serverless deploy -s prod \
+            --param="SLACK_URL=<SLACK_URL>" \
+            --param="DEPLOYMENT_REGION=<DEPLOYMENT_REGION>" \
+            --param="GCP_PROJECT_ID=<GCP_PROJECT_ID>" \
+            --param="TRIGGER_RESOURCE=<TRIGGER_RESOURCE>" \
+            --param="EVENT_TYPE=<EVENT_TYPE>" \
+            --param="SLACK_CHANNEL=<SLACK_CHANNEL>" \
+            --param="SLACK_USERNAME=<SLACK_USERNAME>"
+            ```
+
+        - Using `serverless.yml` and the values provided within the file
+
+            ```sh
+            serverless deploy -s prod
+            ```
 
 --------------------------------
 
