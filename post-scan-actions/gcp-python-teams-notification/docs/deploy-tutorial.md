@@ -14,7 +14,7 @@ Select the project in which you want to deploy the MS Teams notification Cloud f
 
 <walkthrough-project-setup></walkthrough-project-setup>
 
-Copy and execute the script in the Cloud Shell:
+Copy and execute the script in the Cloud Shell or click <walkthrough-open-cloud-shell-button></walkthrough-open-cloud-shell-button>:
 
 ```
 gcloud config set project <walkthrough-project-id/>
@@ -132,5 +132,7 @@ Check MS Teams to see new notifications. To test your deployment, you'll need to
 The tags indicate that File Storage Security scanned the file and tagged it as malware. The scan results are also available in the console on the Scan Activity page.
 
 If all the steps were successful, you should get a MS Teams Channel notification on the configured MS Teams Channel.
+
+<walkthrough-conclusion-trophy></walkthrough-conclusion-trophy>
 
 --------------------------------
