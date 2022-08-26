@@ -49,7 +49,7 @@ where,
 
 ### Deployment through serverless.yml file
 
-You could hardcode these values in the <walkthrough-editor-open-file filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-teams-notification/serverless.yml">serverless.yml</walkthrough-editor-open-file> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
+You could hardcode these values in the <walkthrough-editor-select-line filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-teams-notification/serverless.yml" startLine="6" endLine="12">serverless.yml</walkthrough-editor-select-line> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
 
 Simply replace, the `params` section of the serverless.yml with the right values and run `serverless deploy` as shown in the next step.
 
