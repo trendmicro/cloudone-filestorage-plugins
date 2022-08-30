@@ -1,34 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 3.27"
-    }
-  }
-
-  required_version = ">= 0.14.9"
-}
-
-variable "AWSRegion" {
-  type = string
-  default = ""
-}
-
-provider "aws" {
-  profile = "default"
-  region  = var.AWSRegion
-}
-
-variable "S3BucketToScan" {
-  type = string
-  default = ""
-}
-
-variable "ExternalID" {
-  type = string
-  default = ""
-}
-
 resource "aws_cloudformation_stack" "fss-allinone-by-tf" {
   name = "fss-allinone-stack-by-tf"
   capabilities = ["CAPABILITY_IAM"]
@@ -36,13 +5,34 @@ resource "aws_cloudformation_stack" "fss-allinone-by-tf" {
   parameters = {
     S3BucketToScan = var.S3BucketToScan,
     ExternalID = var.ExternalID
+    CloudOneRegion = var.CloudOneRegion
+    AdditionalIAMPolicies = var.AdditionalIAMPolicies
+    BucketListenerDLQARN = var.BucketListenerDLQARN
+    FSSKeyPrefix = var.FSSKeyPrefix
+    IAMPolicyPrefix = var.IAMPolicyPrefix
+    IAMRolePrefix = var.IAMRolePrefix
+    KMSKeyARNForBucketSSE = var.KMSKeyARNForBucketSSE
+    KMSKeyARNForDLQSSE = var.KMSKeyARNForDLQSSE
+    KMSKeyARNForQueueSSE = var.KMSKeyARNForQueueSSE
+    KMSKeyARNForTopicSSE = var.KMSKeyARNForTopicSSE
+    LambdaFunctionPrefix = var.LambdaFunctionPrefix
+    LambdaLayerPrefix = var.LambdaLayerPrefix
+    NetworkProxy = var.NetworkProxy
+    ObjectFilterPrefix = var.ObjectFilterPrefix
+    PermissionsBoundary = var.PermissionsBoundary
+    PostScanActionTagDLQARN = var.PostScanActionTagDLQARN
+    ReportObjectKey = var.ReportObjectKey
+    ScannerEphemeralStorage = var.ScannerEphemeralStorage
+    ScanOnGetObject = var.ScanOnGetObject
+    ScanResultTopicDLQARN = var.ScanResultTopicDLQARN
+    SecurityGroupIDs = var.SecurityGroupIDs
+    SNSTopicPrefix = var.SNSTopicPrefix
+    SQSQueuePrefix = var.SQSQueuePrefix
+    SubnetIDs = var.SubnetIDs
+    TrendMicroManagementAccount = var.TrendMicroManagementAccount
+    TriggerWithObjectCreatedEvent = var.TriggerWithObjectCreatedEvent
   }
 
   template_url="https://file-storage-security.s3.amazonaws.com/latest/templates/FSS-All-In-One.template"
 
-}
-
-output "CFT_ALLINONE_OUTPUTS" {
-  description = "Outputs from CFT"
-  value       = aws_cloudformation_stack.fss-allinone-by-tf.outputs
 }
