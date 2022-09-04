@@ -21,6 +21,12 @@ resource "random_id" "deploy_suffix" {
   byte_length = 5
 }
 
+data "archive_file" "source" {
+  type        = "zip"
+  source_dir  = "${path.module}/src"
+  output_path = "${path.module}/gcp-promote-and-quarantine-plugin.zip"
+}
+
 resource "google_service_account" "service_account" {
   account_id = "qua-pro-plugin-sa-${lower(random_id.deploy_suffix.hex)}"
   display_name = "Quarantine/Promote plugin Service Account ${random_id.deploy_suffix.hex}"
@@ -94,14 +100,20 @@ resource "google_storage_bucket" "artifacts_bucket" {
 resource "google_storage_bucket_object" "archive" {
   name   = "gcp-promote-and-quarantine-plugin.zip"
   bucket = google_storage_bucket.artifacts_bucket.name
-  source = "gcp-promote-and-quarantine-plugin.zip"
+  source = data.archive_file.source.output_path
+  content_type = "application/zip"
+
+  depends_on   = [
+    google_storage_bucket.artifacts_bucket,
+    data.archive_file.source
+  ]
 }
 
 resource "google_cloudfunctions_function" "promote_and_quarantining_plugin" {
   name = "${var.plugin_prefix}-promote-and-quarantine-${random_id.deploy_suffix.hex}"
   description = "Promote and Quarantine plugin ${random_id.deploy_suffix.hex}"
   source_archive_bucket = google_storage_bucket.artifacts_bucket.name
-  source_archive_object = "gcp-promote-and-quarantine-plugin.zip"
+  source_archive_object = google_storage_bucket_object.archive.name
   runtime = "python38"
   entry_point = "main"
   project = var.project_id
@@ -119,4 +131,9 @@ resource "google_cloudfunctions_function" "promote_and_quarantining_plugin" {
   }
 
   service_account_email = google_service_account.service_account.email
+
+  depends_on = [
+    google_storage_bucket.artifacts_bucket,
+    google_storage_bucket_object.archive
+  ]
 }

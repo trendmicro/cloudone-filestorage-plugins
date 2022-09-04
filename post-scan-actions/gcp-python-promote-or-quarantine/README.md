@@ -20,12 +20,6 @@
    gcloud init
    ```
 
-1. Create a function zip for the deployment using make.
-
-   ```sh
-   make
-   ```
-
 1. Initialize terraform.
 
    ```sh

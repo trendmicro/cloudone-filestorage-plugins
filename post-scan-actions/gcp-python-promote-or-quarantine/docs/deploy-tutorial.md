@@ -18,12 +18,6 @@ gcloud config set project <walkthrough-project-id/>
 
 ## Deploy promote and quarantine function
 
-1. Create a function zip for the deployment using make.
-
-    ```sh
-    make
-    ```
-
 1. Initialize terraform.
 
     ```sh
