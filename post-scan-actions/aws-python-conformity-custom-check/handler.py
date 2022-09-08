@@ -8,7 +8,7 @@ import urllib3
 
 http = urllib3.PoolManager()
 
-region = os.environ.get("CC_REGION", "us-west-2")
+region = os.environ.get("CC_REGION", "us-1")
 ccsecretsarn = os.environ["CC_API_SECRETS_ARN"]
 customcheckid = os.environ.get("CC_CUSTOMCHECKID", "CUSTOM-001").upper()
 customchecksev = os.environ.get("CC_CHECKSEV", "VERY_HIGH").upper()
@@ -24,7 +24,7 @@ headers = {
 
 
 def get_cc_accountid(awsaccountid):
-    accountsapi = f"https://{region}-api.cloudconformity.com/v1/accounts"
+    accountsapi = f"https://conformity.{region}.cloudone.trendmicro.com/api/accounts"
     r = http.request("GET", accountsapi, headers=headers)
     accounts = json.loads(r.data.decode("utf-8"))["data"]
     for account in accounts:
@@ -141,7 +141,7 @@ def lambda_handler(event, context):
                 }
 
                 bodyencoded = json.dumps(checksdata).encode("utf-8")
-                checksapi = f"https://{region}-api.cloudconformity.com/v1/checks"
+                checksapi = f"https://conformity.{region}.cloudone.trendmicro.com/api/checks"
 
                 r = http.request("POST", checksapi, body=bodyencoded, headers=headers)
                 print(r.data.decode("utf-8"))

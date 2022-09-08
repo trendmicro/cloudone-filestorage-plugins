@@ -21,12 +21,17 @@ Parameters:
     Description: ARN of the File Storage SNS Topic to subscribe this function.
   ConformityRegion:
     Type: String
-    Description: Region where you conformity account is hosted. (us-west-2 for Cloud One customers)
-    Default: us-west-2
+    Description: Region where you conformity account is hosted.
+    Default: us-1
     AllowedValues:
-      - us-west-2
-      - ap-southeast-2
-      - eu-west-1
+      - us-1
+      - au-1
+      - gb-1
+      - in-1
+      - sg-1
+      - jp-1
+      - ca-1
+      - de-1
   ConformityApiKey:
     Type: String
     NoEcho: true
