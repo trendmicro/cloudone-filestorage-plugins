@@ -3,7 +3,7 @@
 
 ## Prerequisites
 
-1. **Install supporting tools**
+1. Install Google Cloud SDK.
    - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install-sdk)
 
 ## Installation
@@ -71,9 +71,9 @@
 
 ## Test Slack notifications
 
-Check Slack to see new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
+Check Slack for new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
 
-1. Download the eicar file from eicar file page into your scanning bucket with the script.
+1. Download the eicar file from eicar file page into your scanning bucket with the script:
 
     ```
     wget https://secure.eicar.org/eicar.com.txt
@@ -83,7 +83,7 @@ Check Slack to see new notifications. To test your deployment, you'll need to ge
 
    > File Storage Security scans the file and detects the malware.
 
-2. Execute the script to examine the scan result:
+2. Execute the script to examine the scan results:
 
     ```
     gsutil stat 'gs://<SCANNING_BUCKET_NAME>/eicar'
