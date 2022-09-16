@@ -1,4 +1,4 @@
-# Cloud One File Storage Security Post Scan Action for  Slack notifications
+# Cloud One File Storage Security Post Scan Action for Slack notifications
 
 ## Overview
 
@@ -10,7 +10,7 @@ This tutorial will guide you to deploy a Google Cloud function to push Slack not
 
 ## Project Setup
 
-Select the project in which you want to deploy the slack notification Cloud function. Ideally, this would be the same project where the Cloud Storage bucket and File Storage Security Storage stack reside.
+Select the project in which you want to deploy the slack notification Cloud function. This should be the same project where the Cloud Storage bucket and the File Storage Security Storage stack reside.
 
 <walkthrough-project-setup></walkthrough-project-setup>
 
@@ -44,7 +44,7 @@ Replace the values in the following command and store the output for the next st
 where,
 
 - **SLACK_URL** - The incoming webhook URL generated from Slack Apps. Example: `https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX`
-- **DEPLOYMENT_REGION** - The region where the File Storage Security Storage stack was deployed.
+- **DEPLOYMENT_REGION** - The region in which the File Storage Security Storage stack is deployed.
 - **GCP_PROJECT_ID** - Project ID of the GCP project.
 - **TRIGGER_RESOURCE** - Topic name of the scan result topic name. Example: `projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>`
 - **EVENT_TYPE** - Optional. Defaults to `providers/cloud.pubsub/eventTypes/topic.publish`
@@ -53,9 +53,9 @@ where,
 
 ### Deployment through serverless.yml file
 
-You could hardcode these values in the <walkthrough-editor-select-line filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-slack-notification/serverless.yml" startLine="6" endLine="14">serverless.yml</walkthrough-editor-select-line> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
+You could hardcode these values in the <walkthrough-editor-select-line filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-slack-notification/serverless.yml" startLine="6" endLine="14">serverless.yml</walkthrough-editor-select-line> file. To override a hard-coded value during runtime, pass it as a `--param` as shown in the command-line section above.
 
-Simply replace, the `params` section of the serverless.yml with the right values and run `serverless deploy` as shown in the next step.
+Replace the `params` section of the serverless.yml with the correct values and run `serverless deploy` as shown in the next step.
 
 ```yaml
 params:
@@ -81,7 +81,7 @@ params:
 
 2. Deploy Serverless project.
 
-    This cloudone plugin requires some dependencies from the serverless plugin ecosystem, like `serverless-google-cloudfunctions` before we can deploy this project.
+    This cloudone plugin requires some dependencies from the serverless plugin ecosystem, for example `serverless-google-cloudfunctions`, before you can deploy this project.
 
     - Install serverless dependencies
 
@@ -91,7 +91,7 @@ params:
 
     - Deploy your serverless project
 
-        - Through command-line
+        - Using the command-line:
 
             ```sh
             serverless deploy -s prod \
@@ -104,7 +104,7 @@ params:
             --param="SLACK_USERNAME=<SLACK_USERNAME>"
             ```
 
-        - Using `serverless.yml` and the values provided within the file
+        - Using `serverless.yml` and the values provided within the file:
 
             ```sh
             serverless deploy -s prod
@@ -114,9 +114,9 @@ params:
 
 ## Test Slack notifications
 
-Check Slack to see new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
+Check Slack for new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
 
-1. Download the eicar file from eicar file page into your scanning bucket with the script.
+1. Download the eicar file from eicar file page into your scanning bucket with the script:
 
     ```
     wget https://secure.eicar.org/eicar.com.txt
