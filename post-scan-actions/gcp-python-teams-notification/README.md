@@ -4,20 +4,20 @@
 
 ## Prerequisites
 
-1. **Install supporting tools**
+1. Install Google Cloud SDK.
    - [Google Cloud SDK](https://cloud.google.com/sdk/docs/install-sdk)
 
 ## Installation
 
 ### With GCP Cloud Shell
 
-1. Open in Cloud Shell
+1. Open in Cloud Shell.
 
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Ftrendmicro%2Fcloudone-filestorage-plugins.git&cloudshell_workspace=post-scan-actions%2Fgcp-python-teams-notification&cloudshell_tutorial=docs/deploy-tutorial.md)
 
 ### Local Machine
 
-1. Login to the Google Cloud SDK
+1. Login to the Google Cloud SDK.
 
    ```sh
    gcloud init
@@ -39,8 +39,8 @@
 
 1. Specify the following fields and execute the deployment script:
 
-- **TEAMS_URL** - The incoming webhook URL generated from MS Teams Channel connectors. This generated URL can be created by following the step-by-step guide to creating an Incoming Webhook described here - [How to configure and use Incoming Webhooks in Microsoft Teams](https://techcommunity.microsoft.com/t5/microsoft-365-pnp-blog/how-to-configure-and-use-incoming-webhooks-in-microsoft-teams/ba-p/2051118).
-- **DEPLOYMENT_REGION** - The region where the File Storage Security Storage stack was deployed.
+- **TEAMS_URL** - The incoming webhook URL generated from MS Teams Channel connectors. This generated URL can be created by following the step-by-step guide found here - [How to configure and use Incoming Webhooks in Microsoft Teams](https://techcommunity.microsoft.com/t5/microsoft-365-pnp-blog/how-to-configure-and-use-incoming-webhooks-in-microsoft-teams/ba-p/2051118).
+- **DEPLOYMENT_REGION** - The region in which the File Storage Security Storage stack is deployed.
 - **GCP_PROJECT_ID** - Project ID of the GCP project.
 - **TRIGGER_RESOURCE** - Topic name of the scan result topic name. Example: `projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>`
 - **EVENT_TYPE** - Optional. Defaults to `providers/cloud.pubsub/eventTypes/topic.publish`
@@ -53,7 +53,7 @@
    npm install -g serverless
    ```
 
-2. Deploy Serverless project.
+2. Deploy the Serverless project:
 
    ```sh
    serverless plugin install -n serverless-google-cloudfunctions
@@ -68,7 +68,7 @@
 
 ## Test MS Teams notifications
 
-Check MS Teams to see new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
+Check MS Teams for new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
 
 1. Download the eicar file from eicar file page into your scanning bucket with the script.
 
@@ -80,7 +80,7 @@ Check MS Teams to see new notifications. To test your deployment, you'll need to
 
    > File Storage Security scans the file and detects the malware.
 
-2. Execute the script to examine the scan result:
+2. Execute the script to examine the scan results:
 
     ```
     gsutil stat 'gs://<SCANNING_BUCKET_NAME>/eicar'
