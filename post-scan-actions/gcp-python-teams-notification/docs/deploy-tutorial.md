@@ -10,7 +10,7 @@ This tutorial will guide you to deploy a Google Cloud function to push MS Teams 
 
 ## Project Setup
 
-Select the project in which you want to deploy the MS Teams notification Cloud function. Ideally, this would be the same project where the Cloud Storage bucket and File Storage Security Storage stack reside.
+Select the project in which you want to deploy the MS Teams notification Cloud function. This should be the same project where the Cloud Storage bucket and the File Storage Security Storage stack reside.
 
 <walkthrough-project-setup></walkthrough-project-setup>
 
@@ -28,7 +28,7 @@ Build your deployment command by substituting the following fields in your sampl
 
 ### Deployment by command-line
 
-Replace the values in the following command and store the output for the next step
+Replace the values in the following command and store the output for the next step:
 
 ```sh
     serverless deploy -s prod \
@@ -41,17 +41,17 @@ Replace the values in the following command and store the output for the next st
 
 where,
 
-- **TEAMS_URL** - The incoming webhook URL generated from MS Teams Channel connectors. This generated URL can be created by following the step-by-step guide to creating an Incoming Webhook described here - [How to configure and use Incoming Webhooks in Microsoft Teams](https://techcommunity.microsoft.com/t5/microsoft-365-pnp-blog/how-to-configure-and-use-incoming-webhooks-in-microsoft-teams/ba-p/2051118).
-- **DEPLOYMENT_REGION** - The region where the File Storage Security Storage stack was deployed.
+- **TEAMS_URL** - The incoming webhook URL generated from MS Teams Channel connectors. This generated URL can be created by following the step-by-step guide found here - [How to configure and use Incoming Webhooks in Microsoft Teams](https://techcommunity.microsoft.com/t5/microsoft-365-pnp-blog/how-to-configure-and-use-incoming-webhooks-in-microsoft-teams/ba-p/2051118).
+- **DEPLOYMENT_REGION** - The region in which the File Storage Security Storage stack is deployed.
 - **GCP_PROJECT_ID** - Project ID of the GCP project.
 - **TRIGGER_RESOURCE** - Topic name of the scan result topic name. Example: `projects/<PROJECT_ID>/topics/<SCAN_RESULT_TOPIC_NAME>`
 - **EVENT_TYPE** - Optional. Defaults to `providers/cloud.pubsub/eventTypes/topic.publish`
 
 ### Deployment through serverless.yml file
 
-You could hardcode these values in the <walkthrough-editor-select-line filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-teams-notification/serverless.yml" startLine="6" endLine="12">serverless.yml</walkthrough-editor-select-line> file. To override a hard-coded value during runtime, simply pass it as a `--param` as shown in the command-line section above.
+You could hardcode these values in the <walkthrough-editor-select-line filePath="cloudone-filestorage-plugins/post-scan-actions/gcp-python-teams-notification/serverless.yml" startLine="6" endLine="12">serverless.yml</walkthrough-editor-select-line> file. To override a hard-coded value during runtime, pass it as a `--param` as shown in the command-line section above.
 
-Simply replace, the `params` section of the serverless.yml with the right values and run `serverless deploy` as shown in the next step.
+Replace the `params` section of the serverless.yml with the correct values and run `serverless deploy` as shown in the next step.
 
 ```yaml
 params:
@@ -75,17 +75,17 @@ params:
 
 2. Deploy Serverless project.
 
-    This cloudone plugin requires some dependencies from the serverless plugin ecosystem, like `serverless-google-cloudfunctions` before we can deploy this project.
+    This cloudone plugin requires some dependencies from the serverless plugin ecosystem, for example `serverless-google-cloudfunctions`, before you can deploy this project.
 
-    - Install serverless dependencies
+    - Install the serverless dependencies:
 
         ```sh
         serverless plugin install -n serverless-google-cloudfunctions
         ```
 
-    - Deploy your serverless project
+    - Deploy your serverless project:
 
-        - Through command-line
+        - Using the command-line:
 
             ```sh
             serverless deploy -s prod \
@@ -96,7 +96,7 @@ params:
             --param="EVENT_TYPE=<EVENT_TYPE>"
             ```
 
-        - Using `serverless.yml` and the values provided within the file
+        - Using `serverless.yml` and the values provided within the file:
 
             ```sh
             serverless deploy -s prod
@@ -106,7 +106,7 @@ params:
 
 ## Test MS Teams notifications
 
-Check MS Teams to see new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
+Check MS Teams for new notifications. To test your deployment, you'll need to generate a malware detection using the eicar file.
 
 1. Download the eicar file from eicar file page into your scanning bucket with the script.
 
@@ -118,7 +118,7 @@ Check MS Teams to see new notifications. To test your deployment, you'll need to
 
     > File Storage Security scans the file and detects the malware.
 
-2. Execute the script to examine the scan result:
+2. Execute the script to examine the scan results:
 
     ```
     gsutil stat 'gs://<SCANNING_BUCKET_NAME>/eicar'
