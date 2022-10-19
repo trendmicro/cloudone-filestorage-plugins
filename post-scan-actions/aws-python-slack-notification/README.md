@@ -1,6 +1,6 @@
 # Post Scan Action - Slack Notification
 
-After a scan occurs and a malicious file is detected, this example Lambda function sends out a notification to Slack using Amazon Simple Notification Service.
+After a scan occurs and a malicious file is detected, this Lambda function sends out a notification to Slack using Amazon Simple Notification Service.
 
 For terraform deployment, please go to the `terraform` folder where there is a specific README explaining the process.
 
