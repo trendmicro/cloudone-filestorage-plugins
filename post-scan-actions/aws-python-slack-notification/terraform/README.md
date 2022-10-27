@@ -21,7 +21,7 @@ After a scan occurs and a malicious file is detected, this Lambda function sends
     
     [Additional information](https://slack.com/help/articles/115005265063-Incoming-webhooks-for-Slack)
 
-3. Ensure that you have the terraform and AWS CLIs installed and configured, then go to terraform folder and change appropriately the values at the variables in the `variables.tf` file.
+3. Ensure that you have the terraform and AWS CLIs installed and configured, then go to terraform folder and change appropriately the values at the variables in the `variables.tf` file or use the example `slack.tfvars`.
 
     Run the following script:
 
@@ -30,6 +30,8 @@ After a scan occurs and a malicious file is detected, this Lambda function sends
         terraform plan
         terraform apply
     ```
+
+    If you decided to use the `slack.tfvars` file, replace the `terraform apply` command above to `terraform apply -var-file="slack.tfvars`
 
 ## Clean-up
 
