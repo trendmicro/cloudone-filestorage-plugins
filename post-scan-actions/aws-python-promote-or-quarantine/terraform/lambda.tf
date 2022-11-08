@@ -16,7 +16,7 @@ resource "aws_lambda_function" "PromoteOrQuarantineLambda" {
   runtime = "python3.8"
   tracing_config {
       mode = "Active"
-    }
+  }
   environment {
     variables = {
       PROMOTEBUCKET= var.PromoteBucketName
