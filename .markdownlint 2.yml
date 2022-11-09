@@ -1,0 +1,7 @@
+MD013: false # line-length
+MD033: # no-inline-html
+  allowed_elements:
+    - a
+    - details
+    - p
+    - summary

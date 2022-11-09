@@ -163,6 +163,9 @@ def lambda_handler(event, context):
         if not dst_bucket:
             print(f'Skip: No bucket specified for {operation}')
             continue
+        elif src_bucket == dst_bucket:
+            print(f'Skip: destination bucket for {operation} is the same as scanning bucket')
+            continue
 
         codes = scanning_result['Codes']
         code = CODE_EMPTY
