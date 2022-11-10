@@ -18,7 +18,7 @@ After a scan occurs and a malicious file is detected, this Lambda function sends
     - Enter the Name of the Slack WebHook, by default it will use `incoming-webhook`; if you prefer, you can customize the name.
     -You can add a custom icon in Customize Icon section.
     - Click "Save Setting"
-    
+
     [Additional information](https://slack.com/help/articles/115005265063-Incoming-webhooks-for-Slack)
 
 3. Ensure that you have the terraform and AWS CLIs installed and configured, then go to terraform folder and change appropriately the values at the variables in the `variables.tf` file or use the example `slack.tfvars`.
