@@ -20,7 +20,7 @@ For terraform deployment, please go to the `terraform` folder where there is a s
     - Enter the Name of the Slack WebHook, by default it will use `incoming-webhook`; if you prefer, you can customize the name.
     - If you want any custom icon to add that in Customize Icon section.
     - Click "Save Setting"
-    
+
     [Additional information](https://slack.com/help/articles/115005265063-Incoming-webhooks-for-Slack)
 
 3. **Create an execution role for the Lambda function**
@@ -164,7 +164,7 @@ For terraform deployment, please go to the `terraform` folder where there is a s
 - where:
     - `<YOUR_FSS_SCAN_SEND_SLACK_NOTIFICATION>` is replaced with the name you want to give your Lambda function. Example: `FSS_Scan_Send_Slack_Notification`.
     - `<YOUR_FSS_LAMBDA_SLACK_NOTIFICATION_ROLE>` is replaced with the ARN of the role you previously created for the Lambda function. You can find the ARN in the AWS console under **Services > IAM > Roles** > your role > **Role ARN** field (at the top). Example: `arn:aws:iam::012345678901:role/FSS_Lambda_Slack_Notification_Role`.
-    - `<YOUR_SLACK_URL>` is replaced with the name of your incoming webhook Slack url 
+    - `<YOUR_SLACK_URL>` is replaced with the name of your incoming webhook Slack url
     - `<YOUR_SLACK_CHANNEL>` is replaced with the name of your Slack channel to receive notification
     - `<YOUR_SLACK_USERNAME>`is replaced with the subject of your Slack username defined to send the notitication
 </details>
@@ -187,12 +187,12 @@ For terraform deployment, please go to the `terraform` folder where there is a s
 <details>
 <summary>Using the AWS CLI</summary>
 
-1. **Find the 'ScanResultTopic' SNS topic ARN** 
+1. **Find the 'ScanResultTopic' SNS topic ARN**
     - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources**.
-    - Scroll down to locate the  **ScanResultTopic** Logical ID. 
+    - Scroll down to locate the  **ScanResultTopic** Logical ID.
     - Copy the **ScanResultTopic** ARN to a temporary location. Example: `arn:aws:sns:us-east-1:000000000000:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
 2. **Find the Lambda function ARN**
-    
+
     📌 The Lamdba function ARN is required only if you plan to use the AWS CLI (as opposed to the console) to subscribe the Lambda to the SNS topic.
     - In the AWS console, go to **Services > Lambda**.
     - Search for the Lambda function you created previously. Example: `FSS_Scan_Send_Slack_Notification`
@@ -200,7 +200,7 @@ For terraform deployment, please go to the `terraform` folder where there is a s
     - On the top-left, locate the **ARN**.
     - Copy the ARN to a temporary location. Example: `arn:aws:lambda:us-east-1:000000000000:function:FSS_Scan_Send_Slack_Notification`
     - Enter the following AWS CLI command to subscribe your Lamdba function to the SNS topic:
-        
+
         `aws sns subscribe --topic-arn <SNS_TOPIC_ARN> --protocol lambda --notification-endpoint <YOUR_LAMBDA_FUNCTION_ARN> --region <YOUR_REGION>`
     - where:
         - `<SNS_TOPIC_ARN>` is replaced with the SNS topic ARN you found earlier.
