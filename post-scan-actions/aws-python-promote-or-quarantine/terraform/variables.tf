@@ -27,7 +27,7 @@ variable "PromoteBucketName" {
   description = "[Optional] The bucket name used to promote files without malicious intent. Leave the bucket name blank to disable promoting."
  }
 
-variable "PromoteMode" {
+variable "promote_mode" {
   type = string
   description = "The method by which files were promoted. (Options: move, copy)"
   default = "move"

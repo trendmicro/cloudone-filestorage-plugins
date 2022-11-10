@@ -28,7 +28,7 @@ After a scan occurs, this example Lambda function places clean files in one buck
 
 ### Terraform
 
-Make sure that you have terraform and AWS CLI installed and configured, then go to terraform folder and change appropriately the values at the variables in the `variables.tf` file.
+Make sure that you have Terraform and AWS CLI installed and configured, then go to terraform folder and change appropriately the values at the variables in the `variables.tf` file.
 
 Then you can execute the following:
 

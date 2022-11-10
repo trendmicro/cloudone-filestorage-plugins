@@ -1,5 +1,5 @@
 # Lambda execution policy for ScanningBucketNamePolicy
-resource "aws_iam_policy" "ScanningBucketNamePolicy" {
+resource "aws_iam_policy" "scanning_bucket_name_policy" {
   name_prefix = "ScanningBucketNamePolicy-"
   description  = "AWS IAM Policy for managing aws lambda role"
   policy = <<EOF
