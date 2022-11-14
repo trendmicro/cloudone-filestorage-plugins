@@ -15,13 +15,13 @@ variable "ScanningBucketName" {
   description = "The S3 bucket scanned by Trend Micro Cloud One File Storage Security."
  }
 
-variable "ScanResultTopicARN" {
+variable "scan_result_topic_arn" {
   type = string
   default = ""
   description = "The ARN of the scan result SNS topic in storage stack."
  }
 
-variable "PromoteBucketName" {
+variable "promote_bucket_name" {
   type = string
   default = ""
   description = "[Optional] The bucket name used to promote files without malicious intent. Leave the bucket name blank to disable promoting."
@@ -37,7 +37,7 @@ variable "promote_mode" {
   }
  }
 
-variable "QuarantineBucketName" {
+variable "quarantine_bucket_name" {
   type = string
   default = ""
   description = "[Optional] The bucket name to quarantine malicious files. Leave the bucket name blank to disable quarantining"
@@ -53,10 +53,14 @@ variable "QuarantineBucketName" {
   }
  }
  
-variable "ACL" {
+variable "acl" {
   type = string
   default = ""
   description = "[Optional] Apply an access control list (ACL) on the file after it has been promoted or quarantined. (Options: private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control)"
+  validation {
+    condition = contains(["private, public-read", "public-read-write", "authenticated-read", "aws-exec-read", "bucket-owner-read", "bucket-owner-full-control"], var.acl)
+    error_message = "The ACL is not valid"
+  }
  }
  
  

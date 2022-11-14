@@ -30,7 +30,9 @@ resource "aws_iam_policy" "scanning_bucket_name_policy" {
         "s3:PutObjectAcl"
       ],
       "Resource": [
-        "arn:aws:s3:::${var.PromoteBucketName}/*",
+        %{ if local.promote_enalbed }"arn:aws:s3:::${var.PromoteBucketName}/*"%{ else }%{ endif }
+        %{ if local.promote_enalbed && local.quaratine_enalbed },%{ else }%{ endif }
+        %{ if local.quaratine_enalbed }"arn:aws:s3:::${var.QuarantineBucketName}/*"%{ else }%{ endif }
         "arn:aws:s3:::${var.QuarantineBucketName}/*"
       ]
     }
