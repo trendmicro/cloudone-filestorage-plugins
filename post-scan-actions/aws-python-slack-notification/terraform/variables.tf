@@ -9,25 +9,25 @@ variable "region" {
   }
 }
 
-variable "ScanResultTopicARN" {
+variable "scan_result_topic_arn" {
   type = string
   default = ""
   description = "The ARN of the scan result SNS topic in storage stack."
 }
 
-variable "SlackWebhookURL" {
+variable "slack_webhook_url" {
   type = string
   default = ""
   description = "The URL of the Slack Webhook."
 }
 
-variable "SlackChannel" {
+variable "slack_channel" {
   type = string
   default = ""
   description = "The name of the Slack channel."
 }
 
-variable "SlackUsername" {
+variable "slack_username" {
   type = string
   default = "FSS-Notification"
   description = "The username of the Slack notification."

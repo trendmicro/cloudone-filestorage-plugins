@@ -1,12 +1,14 @@
 # Zip the lambda code
 data "archive_file" "zip_the_python_code" {
-type        = "zip"
+  type        = "zip"
+  source_file = "../handler.py"
+  output_path = "${path.module}/lambda_zip/handler.zip"
 source_file = "../handler.py"
 output_path = "${path.module}/lambda_zip/handler.zip"
 }
 
 # Create the lambda function
-resource "aws_lambda_function" "SlackNotificationLambda" {
+resource "aws_lambda_function" "slack_notification_lambda" {
   filename      = "${path.module}/lambda_zip/handler.zip"
   function_name = "SlackNotificationLambda"
   role          = aws_iam_role.SlackNotificationLambdaRole.arn
@@ -27,8 +29,12 @@ resource "aws_lambda_function" "SlackNotificationLambda" {
 }
 
 # Allows Lambda to add a trigger to SNS
-resource "aws_lambda_permission" "SlackNotificationLambdaPermission" {
-    statement_id = "AllowExecutionFromSNS"
+resource "aws_lambda_permission" "slack_notification_lambda_permission" {
+  statement_id = "AllowExecutionFromSNS"
+  action = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.SlackNotificationLambda.arn}"
+  principal = "sns.amazonaws.com"
+  source_arn = "${var.ScanResultTopicARN}"
     action = "lambda:InvokeFunction"
     function_name = "${aws_lambda_function.SlackNotificationLambda.arn}"
     principal = "sns.amazonaws.com"
@@ -36,7 +42,7 @@ resource "aws_lambda_permission" "SlackNotificationLambdaPermission" {
 }
 
 # Create the sns event source mapping to lambda
-resource "aws_sns_topic_subscription" "ScanResult" {
+resource "aws_sns_topic_subscription" "scan_result" {
   depends_on = [aws_lambda_function.SlackNotificationLambda]
   topic_arn = var.ScanResultTopicARN
   protocol  = "lambda"
