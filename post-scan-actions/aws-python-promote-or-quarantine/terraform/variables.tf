@@ -52,7 +52,7 @@ variable "quarantine_bucket_name" {
     error_message = "The quarantine mode must be either move or copy."
   }
  }
- 
+
 variable "acl" {
   type = string
   default = ""
@@ -62,6 +62,3 @@ variable "acl" {
     error_message = "The ACL is not valid"
   }
  }
- 
- 
- 
