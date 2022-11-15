@@ -9,7 +9,7 @@ variable "region" {
   }
  }
 
-variable "ScanningBucketName" {
+variable "scanning_bucket_name" {
   type = string
   default = ""
   description = "The S3 bucket scanned by Trend Micro Cloud One File Storage Security."
@@ -43,7 +43,7 @@ variable "quarantine_bucket_name" {
   description = "[Optional] The bucket name to quarantine malicious files. Leave the bucket name blank to disable quarantining"
  }
 
- variable "QuarantineMode" {
+ variable "quarantine_mode" {
   type = string
   description = "The method by which files were quarantined. (Options: move, copy)"
   default = "move"
