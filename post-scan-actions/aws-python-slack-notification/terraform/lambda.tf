@@ -11,7 +11,7 @@ output_path = "${path.module}/lambda_zip/handler.zip"
 resource "aws_lambda_function" "slack_notification_lambda" {
   filename      = "${path.module}/lambda_zip/handler.zip"
   function_name = "SlackNotificationLambda"
-  role          = aws_iam_role.SlackNotificationLambdaRole.arn
+  role          = aws_iam_role.slack_notification_lambda_role.arn
   handler       = "handler.lambda_handler"
   memory_size = 512
   timeout = 30
@@ -21,9 +21,9 @@ resource "aws_lambda_function" "slack_notification_lambda" {
     }
   environment {
     variables = {
-      SLACK_URL= var.SlackWebhookURL
-      SLACK_CHANNEL= var.SlackChannel
-      SLACK_USERNAME= var.SlackUsername
+      SLACK_URL= var.slack_webhook_url
+      SLACK_CHANNEL= var.slack_channel
+      SLACK_USERNAME= var.slack_username
     }
   }
 }
@@ -34,11 +34,11 @@ resource "aws_lambda_permission" "slack_notification_lambda_permission" {
   action = "lambda:InvokeFunction"
   function_name = "${aws_lambda_function.SlackNotificationLambda.arn}"
   principal = "sns.amazonaws.com"
-  source_arn = "${var.ScanResultTopicARN}"
+  source_arn = "${var.scan_result_topic_arn}"
     action = "lambda:InvokeFunction"
     function_name = "${aws_lambda_function.SlackNotificationLambda.arn}"
     principal = "sns.amazonaws.com"
-    source_arn = "${var.ScanResultTopicARN}"
+    source_arn = "${var.scan_result_topic_arn}"
 }
 
 # Create the sns event source mapping to lambda
