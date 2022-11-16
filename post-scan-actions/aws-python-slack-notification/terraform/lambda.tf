@@ -32,19 +32,19 @@ resource "aws_lambda_function" "slack_notification_lambda" {
 resource "aws_lambda_permission" "slack_notification_lambda_permission" {
   statement_id = "AllowExecutionFromSNS"
   action = "lambda:InvokeFunction"
-  function_name = "${aws_lambda_function.SlackNotificationLambda.arn}"
+  function_name = "${aws_lambda_function.slack_notification_lambda.arn}"
   principal = "sns.amazonaws.com"
   source_arn = "${var.scan_result_topic_arn}"
     action = "lambda:InvokeFunction"
-    function_name = "${aws_lambda_function.SlackNotificationLambda.arn}"
+    function_name = "${aws_lambda_function.slack_notification_lambda.arn}"
     principal = "sns.amazonaws.com"
     source_arn = "${var.scan_result_topic_arn}"
 }
 
 # Create the sns event source mapping to lambda
 resource "aws_sns_topic_subscription" "scan_result" {
-  depends_on = [aws_lambda_function.SlackNotificationLambda]
+  depends_on = [aws_lambda_function.slack_notification_lambda]
   topic_arn = var.ScanResultTopicARN
   protocol  = "lambda"
-  endpoint  = aws_lambda_function.SlackNotificationLambda.arn
+  endpoint  = aws_lambda_function.slack_notification_lambda.arn
 }
