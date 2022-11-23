@@ -3,6 +3,7 @@ locals {
   promote_enalbed = var.promote_bucket_name == "" ? false : true
   quaratine_enalbed = var.quarantine_bucket_name == "" ? false : true
 }
+
 resource "aws_iam_policy" "scanning_bucket_name_policy" {
   name_prefix = "ScanningBucketNamePolicy-"
   description  = "AWS IAM Policy for managing aws lambda role"
@@ -37,7 +38,6 @@ resource "aws_iam_policy" "scanning_bucket_name_policy" {
         %{ if local.promote_enalbed }"arn:aws:s3:::${var.PromoteBucketName}/*"%{ else }%{ endif }
         %{ if local.promote_enalbed && local.quaratine_enalbed },%{ else }%{ endif }
         %{ if local.quaratine_enalbed }"arn:aws:s3:::${var.QuarantineBucketName}/*"%{ else }%{ endif }
-        "arn:aws:s3:::${var.QuarantineBucketName}/*"
       ]
     }
   ]
