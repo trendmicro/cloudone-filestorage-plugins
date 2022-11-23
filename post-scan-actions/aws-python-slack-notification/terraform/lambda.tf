@@ -3,8 +3,6 @@ data "archive_file" "zip_the_python_code" {
   type        = "zip"
   source_file = "../handler.py"
   output_path = "${path.module}/lambda_zip/handler.zip"
-source_file = "../handler.py"
-output_path = "${path.module}/lambda_zip/handler.zip"
 }
 
 # Create the lambda function
