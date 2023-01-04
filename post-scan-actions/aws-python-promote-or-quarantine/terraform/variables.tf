@@ -32,7 +32,7 @@ variable "promote_mode" {
   description = "The method by which files were promoted. (Options: move, copy)"
   default = "move"
   validation {
-    condition = contains(["move", "copy"], var.PromoteMode)
+    condition = contains(["move", "copy"], var.promote_mode)
     error_message = "The promote mode must be either move or copy."
   }
  }
@@ -48,7 +48,7 @@ variable "quarantine_bucket_name" {
   description = "The method by which files were quarantined. (Options: move, copy)"
   default = "move"
   validation {
-    condition = contains(["move", "copy"], var.QuarantineMode)
+    condition = contains(["move", "copy"], var.quarantine_mode)
     error_message = "The quarantine mode must be either move or copy."
   }
  }
@@ -58,7 +58,7 @@ variable "acl" {
   default = ""
   description = "[Optional] Apply an access control list (ACL) on the file after it has been promoted or quarantined. (Options: private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control)"
   validation {
-    condition = contains(["private, public-read", "public-read-write", "authenticated-read", "aws-exec-read", "bucket-owner-read", "bucket-owner-full-control"], var.acl)
+    condition = contains(["", "private", "public-read", "public-read-write", "authenticated-read", "aws-exec-read", "bucket-owner-read", "bucket-owner-full-control"], var.acl)
     error_message = "The ACL is not valid"
   }
  }

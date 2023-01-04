@@ -18,14 +18,14 @@ resource "aws_iam_policy" "scanning_bucket_name_policy" {
         "s3:DeleteObject",
         "s3:GetObjectTagging"
       ],
-      "Resource": "arn:aws:s3:::${var.ScanningBucketName}/*"
+      "Resource": "arn:aws:s3:::${var.scanning_bucket_name}/*"
     },
     {
       "Effect": "Allow",
       "Action": [
         "s3:ListBucket"
       ],
-      "Resource": "arn:aws:s3:::${var.ScanningBucketName}"
+      "Resource": "arn:aws:s3:::${var.scanning_bucket_name}"
     },
     {
       "Effect": "Allow",
@@ -35,9 +35,9 @@ resource "aws_iam_policy" "scanning_bucket_name_policy" {
         "s3:PutObjectAcl"
       ],
       "Resource": [
-        %{ if local.promote_enalbed }"arn:aws:s3:::${var.PromoteBucketName}/*"%{ else }%{ endif }
+        %{ if local.promote_enalbed }"arn:aws:s3:::${var.promote_bucket_name}/*"%{ else }%{ endif }
         %{ if local.promote_enalbed && local.quaratine_enalbed },%{ else }%{ endif }
-        %{ if local.quaratine_enalbed }"arn:aws:s3:::${var.QuarantineBucketName}/*"%{ else }%{ endif }
+        %{ if local.quaratine_enalbed }"arn:aws:s3:::${var.quarantine_bucket_name}/*"%{ else }%{ endif }
       ]
     }
   ]
@@ -70,5 +70,5 @@ EOF
 resource "aws_iam_role_policy_attachment" "ScanningBucketNamePolicyAttachment" {
   depends_on = [aws_iam_role.PromoteOrQuarantineLambdaRole]
   role = aws_iam_role.PromoteOrQuarantineLambdaRole.name
-  policy_arn = aws_iam_policy.ScanningBucketNamePolicy.arn
+  policy_arn = aws_iam_policy.scanning_bucket_name_policy.arn
 }

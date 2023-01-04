@@ -3,7 +3,7 @@ data "archive_file" "zip_the_python_code" {
   type        = "zip"
   source_file = "../handler.py"
   output_path = "../handler.zip"
-  output_path = "../handler.zip"
+  
 }
 
 # Create the lambda function
@@ -20,11 +20,11 @@ resource "aws_lambda_function" "PromoteOrQuarantineLambda" {
   }
   environment {
     variables = {
-      PROMOTEBUCKET= var.PromoteBucketName
-      PROMOTEMODE= var.PromoteMode
-      QUARANTINEBUCKET= var.QuarantineBucketName
-      QUARANTINEMODE= var.QuarantineMode
-      ACL= var.ACL
+      PROMOTEBUCKET= var.promote_bucket_name
+      PROMOTEMODE= var.promote_mode
+      QUARANTINEBUCKET= var.quarantine_bucket_name
+      QUARANTINEMODE= var.quarantine_mode
+      ACL= var.acl
     }
   }
 }
@@ -35,13 +35,13 @@ resource "aws_lambda_permission" "PromoteOrQuarantineLambdaPermission" {
     action = "lambda:InvokeFunction"
     function_name = "${aws_lambda_function.PromoteOrQuarantineLambda.arn}"
     principal = "sns.amazonaws.com"
-    source_arn = "${var.ScanResultTopicARN}"
+    source_arn = "${var.scan_result_topic_arn}"
 }
 
 # Create the sns event source mapping to lambda
 resource "aws_sns_topic_subscription" "ScanResult" {
   depends_on = [aws_lambda_function.PromoteOrQuarantineLambda]
-  topic_arn = var.ScanResultTopicARN
+  topic_arn = var.scan_result_topic_arn
   protocol  = "lambda"
   endpoint  = aws_lambda_function.PromoteOrQuarantineLambda.arn
 }
