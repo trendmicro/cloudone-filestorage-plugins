@@ -47,7 +47,7 @@ variable "FSSBucketName" {
 variable "FSSKeyPrefix" {
   type = string
   default = "latest/"
-  dedescription = "File Storage Security key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/)."
+  description = "File Storage Security key prefix can include numbers, lowercase letters, uppercase letters, hyphens (-), and forward slash (/)."
 }
 
 variable "IAMPolicyPrefix" {
