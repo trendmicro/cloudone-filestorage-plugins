@@ -9,7 +9,7 @@ def lambda_handler(event, context):
     url = os.environ['SLACK_URL']
     channel = os.environ['SLACK_CHANNEL']
     username = os.environ['SLACK_USERNAME']
-    l
+    
     for record in event['Records']:
 
         #Message details from SNS event
@@ -21,7 +21,7 @@ def lambda_handler(event, context):
         account_id = arn.split(":")[4].strip()
 
         if findings:
-        l
+        
             malwares = []
             types = []
             for finding in message['scanning_result']['Findings']:
@@ -40,13 +40,13 @@ def lambda_handler(event, context):
             malwares=', '.join(malwares),
             types=', '.join(types)
             )
-            l
+            
             payload = {
                         "channel": channel,
                         "username": username,
                         "text": body_text,
                         "icon_emoji": ":rotating_light:"
                         }
-            l
+            
             encoded_msg = json.dumps(payload).encode('utf-8')
             resp = http.request('POST',url, body=encoded_msg)
