@@ -190,7 +190,7 @@ After a scan occurs and a malicious file is detected, this example Lambda functi
     - Scroll down to locate the  **ScanResultTopic** Logical ID. 
     - Copy the **ScanResultTopic** ARN to a temporary location. Example: `arn:aws:sns:us-east-1:000000000000:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
 2. **Find the Lambda function ARN**
-    
+
     📌 The Lamdba function ARN is required only if you plan to use the AWS CLI (as opposed to the console) to subscribe the Lambda to the SNS topic.
     - In the AWS console, go to **Services > Lambda**.
     - Search for the Lambda function you created previously. Example: `FSS_Scan_Send_Slack_Notification`
@@ -198,7 +198,7 @@ After a scan occurs and a malicious file is detected, this example Lambda functi
     - On the top-left, locate the **ARN**.
     - Copy the ARN to a temporary location. Example: `arn:aws:lambda:us-east-1:000000000000:function:FSS_Scan_Send_Slack_Notification`
     - Enter the following AWS CLI command to subscribe your Lamdba function to the SNS topic:
-
+        
         `aws sns subscribe --topic-arn <SNS_TOPIC_ARN> --protocol lambda --notification-endpoint <YOUR_LAMBDA_FUNCTION_ARN> --region <YOUR_REGION>`
     - where:
         - `<SNS_TOPIC_ARN>` is replaced with the SNS topic ARN you found earlier.
