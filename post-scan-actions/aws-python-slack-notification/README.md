@@ -18,7 +18,7 @@ After a scan occurs and a malicious file is detected, this example Lambda functi
     - Enter the Name of the Slack WebHook, by default it will use `incoming-webhook`; if you prefer, you can customize the name.
     - If you want any custom icon to add that in Customize Icon section.
     - Click "Save Setting"
-
+    
     [Additional information](https://slack.com/help/articles/115005265063-Incoming-webhooks-for-Slack)
 
 3. **Create an execution role for the Lambda function**
