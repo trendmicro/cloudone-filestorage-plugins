@@ -57,4 +57,4 @@ To test that the application was deployed properly, you'll need to generate a ma
         - where:
             - `<YOUR_SCANNING_BUCKET>` is replaced with the ScanningBucket name.
 
-    > **NOTE:** It can take about 15-30 seconds or more for the file to move.
+        > **NOTE:** It can take about 15-30 seconds or more for the file to move.
