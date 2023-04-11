@@ -18,7 +18,7 @@ After a scan occurs and a malicious file is detected, this example Lambda functi
     - Enter the Name of the Slack WebHook, by default it will use `incoming-webhook`; if you prefer, you can customize the name.
     - If you want any custom icon to add that in Customize Icon section.
     - Click "Save Setting"
-    
+
     [Additional information](https://slack.com/help/articles/115005265063-Incoming-webhooks-for-Slack)
 
 3. **Create an execution role for the Lambda function**
@@ -162,7 +162,7 @@ After a scan occurs and a malicious file is detected, this example Lambda functi
 - where:
     - `<YOUR_FSS_SCAN_SEND_SLACK_NOTIFICATION>` is replaced with the name you want to give your Lambda function. Example: `FSS_Scan_Send_Slack_Notification`.
     - `<YOUR_FSS_LAMBDA_SLACK_NOTIFICATION_ROLE>` is replaced with the ARN of the role you previously created for the Lambda function. You can find the ARN in the AWS console under **Services > IAM > Roles** > your role > **Role ARN** field (at the top). Example: `arn:aws:iam::012345678901:role/FSS_Lambda_Slack_Notification_Role`.
-    - `<YOUR_SLACK_URL>` is replaced with the name of your incoming webhook Slack url
+    - `<YOUR_SLACK_URL>` is replaced with the name of your incoming webhook Slack url 
     - `<YOUR_SLACK_CHANNEL>` is replaced with the name of your Slack channel to receive notification
     - `<YOUR_SLACK_USERNAME>`is replaced with the subject of your Slack username defined to send the notitication
 </details>
