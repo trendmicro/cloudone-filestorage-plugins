@@ -33,10 +33,6 @@ resource "aws_lambda_permission" "slack_notification_lambda_permission" {
   function_name = "${aws_lambda_function.slack_notification_lambda.arn}"
   principal = "sns.amazonaws.com"
   source_arn = "${var.scan_result_topic_arn}"
-    action = "lambda:InvokeFunction"
-    function_name = "${aws_lambda_function.slack_notification_lambda.arn}"
-    principal = "sns.amazonaws.com"
-    source_arn = "${var.scan_result_topic_arn}"
 }
 
 # Create the sns event source mapping to lambda
