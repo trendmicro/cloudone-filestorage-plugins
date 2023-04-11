@@ -21,7 +21,7 @@ def lambda_handler(event, context):
         account_id = arn.split(":")[4].strip()
 
         if findings:
-
+        
             malwares = []
             types = []
             for finding in message['scanning_result']['Findings']:
@@ -47,6 +47,6 @@ def lambda_handler(event, context):
                         "text": body_text,
                         "icon_emoji": ":rotating_light:"
                         }
-
+            
             encoded_msg = json.dumps(payload).encode('utf-8')
             resp = http.request('POST',url, body=encoded_msg)
