@@ -309,9 +309,9 @@ Resources:
               const scanLimitPerIteration = event.limit;
               const bucket = event.bucket;
               const allKeys = await fetchKeys(stateBucket, stateKey);
-              
+
               const filtered = filterKeys(allKeys, scanLimitPerIteration);
-              
+
               // Rewrite file in bucket with remaining keys
               if (filtered.remainingKeys){
                   await writeToBucket(filtered.remainingKeys, stateKey, stateBucket);
@@ -325,7 +325,7 @@ Resources:
                   stateBucket: event.stateBucket,
                   stateKey: event.stateKey
               };
-              
+
               return response;
           };
       Role:
@@ -568,7 +568,7 @@ Resources:
         Fn::Join:
           - ""
           - - |-2
-              
+
                     {
                       "Comment": "A machine that loops trough all files a bucket to scan them with File Storage Security.",
                       "StartAt": "Filter first 1000 keys to scan",
@@ -674,7 +674,9 @@ Resources:
             - Ref: AWS::Region
             - ":"
             - Ref: AWS::AccountId
-            - ":stateMachine:ScannerLoopStateMachine\",
+            - ":stateMachine:ScannerLoopStateMachine-"
+            - Ref: BucketName
+            - "\",
 
               \                      \"Input\": {
 
@@ -721,7 +723,11 @@ Resources:
               \      }
 
               \      "
-      StateMachineName: ScannerLoopStateMachine
+      StateMachineName:
+        Fn::Join:
+          - ""
+          - - ScannerLoopStateMachine-
+            - Ref: BucketName
   FullScanStarterExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -769,7 +775,7 @@ Resources:
         Fn::Join:
           - ""
           - - |-2
-              
+
                     {
                       "Comment": "Kicks of a Full Scan using File Storage Security.",
                       "StartAt": "List all keys in bucket",
@@ -841,7 +847,11 @@ Resources:
               \      }
 
               \      "
-      StateMachineName: fullScanStarterStateMachine
+      StateMachineName:
+        Fn::Join:
+          - ""
+          - - fullScanStarterStateMachine-
+            - Ref: BucketName
     DependsOn:
       - FullScanStarterExecutionRoleDefaultPolicy
       - FullScanStarterExecutionRole
@@ -898,5 +908,5 @@ Outputs:
           - Ref: AWS::Region
           - ":"
           - Ref: AWS::AccountId
-          - :stateMachine:fullScanStarterStateMachine
-
+          - :stateMachine:fullScanStarterStateMachine-
+          - Ref: BucketName

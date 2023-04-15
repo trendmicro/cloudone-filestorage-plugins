@@ -510,11 +510,24 @@
        {
         "Ref": "AWS::AccountId"
        },
-       ":stateMachine:ScannerLoopStateMachine\",\n                      \"Input\": {\n                        \"stateBucket.$\": \"$.stateBucket\",\n                        \"stateKey.$\": \"$.stateKey\",\n                        \"limit.$\": \"$.limit\",\n                        \"bucket.$\": \"$.bucket\",\n                        \"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\": \"$$.Execution.Id\"\n                      }\n                    },\n                    \"End\": true\n                  },\n                  \"Pass\": {\n                    \"Type\": \"Pass\",\n                    \"End\": true,\n                    \"Result\": {}\n                  }\n                }\n              }\n            ],\n            \"End\": true\n          }\n        }\n      }\n      "
+       ":stateMachine:ScannerLoopStateMachine-",
+       {
+        "Ref": "BucketName"
+       },"\",\n                      \"Input\": {\n                        \"stateBucket.$\": \"$.stateBucket\",\n                        \"stateKey.$\": \"$.stateKey\",\n                        \"limit.$\": \"$.limit\",\n                        \"bucket.$\": \"$.bucket\",\n                        \"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\": \"$$.Execution.Id\"\n                      }\n                    },\n                    \"End\": true\n                  },\n                  \"Pass\": {\n                    \"Type\": \"Pass\",\n                    \"End\": true,\n                    \"Result\": {}\n                  }\n                }\n              }\n            ],\n            \"End\": true\n          }\n        }\n      }\n      "
       ]
      ]
     },
-    "StateMachineName": "ScannerLoopStateMachine"
+    "StateMachineName": {
+        "Fn::Join": [
+            "",
+            [
+            "ScannerLoopStateMachine-",
+            {
+            "Ref": "BucketName"
+            }
+            ]
+        ]
+        }
    }
   },
   "FullScanStarterExecutionRole": {
@@ -616,7 +629,17 @@
       ]
      ]
     },
-    "StateMachineName": "fullScanStarterStateMachine"
+    "StateMachineName": {
+        "Fn::Join": [
+         "",
+         [
+          "fullScanStarterStateMachine-",
+          {
+           "Ref": "BucketName"
+          }
+         ]
+        ]
+       }
    },
    "DependsOn": [
     "FullScanStarterExecutionRoleDefaultPolicy",
@@ -714,7 +737,10 @@
       {
        "Ref": "AWS::AccountId"
       },
-      ":stateMachine:fullScanStarterStateMachine"
+      ":stateMachine:fullScanStarterStateMachine-",
+      {
+       "Ref": "BucketName"
+      }
      ]
     ]
    }
