@@ -1,14 +1,14 @@
 Metadata:
   AWS::ServerlessRepo::Application:
     Name: cloudone-filestorage-plugin-trigger-full-scheduled-scan
-    Description: It deploys all the required resources to trigger a full scan, scheduled or not, on a S3 bucket leveraging an existing Trend File Storage Security deployment.,
-    Author: Trend Cloud One File Storage Security,
-    SpdxLicenseId: Apache-2.0,
-    LicenseUrl: ../../LICENSE,
-    ReadmeUrl: README.md,
+    Description: It deploys all the required resources to trigger a full scan, scheduled or not, on a S3 bucket leveraging an existing Trend File Storage Security deployment.
+    Author: Trend Cloud One File Storage Security
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: ../../LICENSE
+    ReadmeUrl: README.md
     Labels: ['trendmicro','cloudone','filestorage','s3','bucket','plugin','full','full-scan','scheduled','scheduled-scan']
-    HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins,
-    SemanticVersion: 2.0.0,
+    HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
+    SemanticVersion: 2.0.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/scan-triggers/aws-python-bucket-full-and-scheduled-scan
 Parameters:
   BucketName:
