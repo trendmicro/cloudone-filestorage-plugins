@@ -689,7 +689,7 @@ Resources:
             - Ref: AWS::Region
             - ":"
             - Ref: AWS::AccountId
-            - ":stateMachine:ScannerLoopStateMachine-"
+            - ":stateMachine:ScannerLoopSM-"
             - Ref: BucketName
             - "\",
 
@@ -741,7 +741,7 @@ Resources:
       StateMachineName:
         Fn::Join:
           - ""
-          - - ScannerLoopStateMachine-
+          - - ScannerLoopSM-
             - Ref: BucketName
   FullScanStarterExecutionRole:
     Type: AWS::IAM::Role
@@ -865,7 +865,7 @@ Resources:
       StateMachineName:
         Fn::Join:
           - ""
-          - - fullScanStarterStateMachine-
+          - - fullScanSSM-
             - Ref: BucketName
     DependsOn:
       - FullScanStarterExecutionRoleDefaultPolicy
@@ -923,5 +923,5 @@ Outputs:
           - Ref: AWS::Region
           - ":"
           - Ref: AWS::AccountId
-          - :stateMachine:fullScanStarterStateMachine-
+          - :stateMachine:fullScanSSM-
           - Ref: BucketName
