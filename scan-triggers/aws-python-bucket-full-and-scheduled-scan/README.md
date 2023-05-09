@@ -23,7 +23,7 @@ It deploys all the required resources to trigger a full scan, scheduled or not, 
 
 ### From CloudFormation
 
-1. Download cloudone-filestorage-plugin-full-scan.json
+1. Download [template.yaml](https://raw.githubusercontent.com/trendmicro/cloudone-filestorage-plugins/master/scan-triggers/aws-python-bucket-full-and-scheduled-scan/template.yaml)
 2. Visit [CloudFormation's Create stack page](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/template)
 3. Select `Upload a template file` and pick the downloaded template
 4. Fill in the parameters.
