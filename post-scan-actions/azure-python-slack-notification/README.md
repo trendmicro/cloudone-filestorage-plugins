@@ -19,12 +19,12 @@ After a malicious scan result, this example Azure function sends a notification 
     - Enter the Description of your WebHook.
     - Enter the Name of the Slack WebHook, by default it will use `incoming-webhook`; if you prefer, you can customize the name.
     - If you want any custom icon to add that in Customize Icon section.
-    - Click "Save Setting" 
+    - Click "Save Setting"
     - [Additional information](https://slack.com/help/articles/115005265063-Incoming-webhooks-for-Slack)
 
 ## Installation
 
-### 1. Deploy Azure function app
+### Deploy Azure function app
 
 1. Log in to the Azure CLI and switch to the Azure subscription to deploy resources:
 
@@ -50,16 +50,6 @@ After a malicious scan result, this example Azure function sends a notification 
         slackWebHookURL=$SLACK_WEBHOOK_URL \
         slackChannelName=$SLACK_CHANNEL_NAME \
         scanResultTopicResourceID=$SCAN_RESULT_TOPIC_RESOURCE_ID
-    ```
-
-### 2. Publish Azure function
-
-1. Download [cloudone-filestorage-plugins repository](https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master)
-1. Navigate to `post-scan-actions/azure-python-slack-notification/slackNotification`
-1. Publish the function to the function app:
-
-    ```bash
-    func azure functionapp publish $FUNCTION_NAME --python
     ```
 
 ## Test the function

@@ -9,6 +9,20 @@
                 "description": "The name of the promote or quarantine function to create."
             }
         },
+        "functionsPackageLocation": {
+            "type": "string",
+            "defaultValue": "https://github.com/trendmicro/cloudone-filestorage-plugins/releases/download/azure-python-promote-or-quarantine-1.0.0",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
+        "sharedAccessSignature": {
+            "type": "secureString",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
         "scanningStorageAccountResourceID": {
             "type": "String",
             "metadata": {
@@ -60,6 +74,8 @@
     },
     "variables": {
         "location": "[resourceGroup().location]",
+        "unifiedSAS": "[if(empty(parameters('sharedAccessSignature')), '', if(startsWith(parameters('sharedAccessSignature'), '?'), parameters('sharedAccessSignature'), concat('?', parameters('sharedAccessSignature'))))]",
+        "functionPackageLink": "[concat(parameters('functionsPackageLocation') ,'/promoteOrQuarantineFunction.zip', variables('unifiedSAS'))]",
         "functionAppName": "[parameters('promoteOrQuarantineFunctionName')]",
         "hostingPlanName": "[parameters('promoteOrQuarantineFunctionName')]",
         "applicationInsightsName": "[parameters('promoteOrQuarantineFunctionName')]",
@@ -149,8 +165,12 @@
                             "value": "[toLower(variables('functionAppName'))]"
                         },
                         {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "[variables('functionPackageLink')]"
+                        },
+                        {
                             "name": "FUNCTIONS_EXTENSION_VERSION",
-                            "value": "~3"
+                            "value": "~4"
                         },
                         {
                             "name": "WEBSITE_NODE_DEFAULT_VERSION",

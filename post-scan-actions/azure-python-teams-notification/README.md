@@ -18,13 +18,13 @@ After a malicious scan result, this example Azure function sends a notification 
     - Click `Configure`
     - Create a name for the Teams WebHook, ex 'TM-FSS'
     - Click `Create`
-    - Copy the Webhook URL 
-    
+    - Copy the Webhook URL
+
     [Additional information](https://docs.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook)
 
 ## Installation
 
-### 1. Deploy Azure function app
+### Deploy Azure function app
 
 1. Log in to the Azure CLI and switch to the Azure subscription to deploy resources:
 
@@ -49,16 +49,6 @@ After a malicious scan result, this example Azure function sends a notification 
         -p fssTeamsFunctionName=$FUNCTION_NAME \
         teamsWebHookURL=$TEAMS_WEBHOOK_URL \
         scanResultTopicResourceID=$SCAN_RESULT_TOPIC_RESOURCE_ID
-    ```
-
-### 2. Publish Azure function
-
-1. Download [cloudone-filestorage-plugins repository](https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master)
-1. Navigate to `post-scan-actions/azure-python-teams-notification/teamsNotification`
-1. Publish the function to the function app:
-
-    ```bash
-    func azure functionapp publish $FUNCTION_NAME --python
     ```
 
 ## Test the function
