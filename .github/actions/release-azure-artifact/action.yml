@@ -1,0 +1,59 @@
+name: Release Azure Function Artifacts
+description: Release Azure Function Artifacts
+
+inputs:
+  plugin_version:
+    description: 'The version of the plugin'
+    required: true
+  plugin_path:
+    description: 'The path of the plugin'
+    required: true
+  plugin_name:
+    description: 'The name of the plugin'
+    required: true
+  plugin_functions:
+    description: 'The name of the plugin functions'
+    required: true
+  repo-token:
+    description: 'The token to use for the GitHub API'
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Init Python Environment
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        cache: 'pip'
+
+    - name: Install Packages
+      shell: bash
+      run: |
+        for function in $(echo '${{ inputs.plugin_functions }}' | jq -r '.[]'); do
+          pip install --target ${{ inputs.plugin_path }}/$function/.python_packages/lib/site-packages -r ${{ inputs.plugin_path }}/$function/requirements.txt
+        done
+
+    - name: Zip Files
+      shell: bash
+      run: |
+        ZIP_DIR=${{ inputs.plugin_path }}/zip
+        mkdir -p $ZIP_DIR
+
+        for function in $(echo '${{ inputs.plugin_functions }}' | jq -r '.[]'); do
+          zip -rq ${{ inputs.plugin_path }}/zip/$function.zip ${{ inputs.plugin_path }}/$function -x "*.funcignore" "*requirements.txt"
+        done
+
+    - name: Upload Release Asset
+      id: upload_asset
+      uses: svenstaro/upload-release-action@v2
+      env:
+        GITHUB_TOKEN: ${{ inputs.repo-token }}
+      with:
+        repo_token: ${{ inputs.repo-token }}
+        tag: ${{ inputs.plugin_name }}-${{ inputs.plugin_version }}
+        release_name: ${{ inputs.plugin_name }} - ${{ inputs.plugin_version }}
+        file_glob: true
+        overwrite: true
+        file: ${{ inputs.plugin_path }}/zip/*

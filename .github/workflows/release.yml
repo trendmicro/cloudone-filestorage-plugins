@@ -1,0 +1,80 @@
+name: Release on Merge to Master
+
+on:
+  push:
+    branches:
+      - master
+
+permissions: write-all
+
+jobs:
+  release-quarantine:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v35.9.2
+        with:
+          files: |
+            post-scan-actions/**/version.json
+
+      - name: List all changed files
+        run: |
+          echo ${{ steps.changed-files.outputs.all_changed_files }}
+
+      - name: Declare Plugin Changed
+        id: plugin_changes
+        run: |
+          echo "promote_or_quarantine=${{ contains(steps.changed-files.outputs.all_changed_files, 'azure-python-promote-or-quarantine') }}" >> $GITHUB_ENV
+          echo "slack_notification=${{ contains(steps.changed-files.outputs.all_changed_files, 'azure-python-slack-notification') }}" >> $GITHUB_ENV
+          echo "teams_notification=${{ contains(steps.changed-files.outputs.all_changed_files, 'azure-python-teams-notification') }}" >> $GITHUB_ENV
+
+      - name: Declare Versions
+        id: plugin_versions
+        run: |
+          promote_or_quarantine_version=$(jq -r '.version' post-scan-actions/azure-python-promote-or-quarantine/version.json)
+          echo "promote or quarantine version: $promote_or_quarantine_version"
+          echo "promote_or_quarantine=$promote_or_quarantine_version" >> $GITHUB_OUTPUT
+
+          slack_notification_version=$(jq -r '.version' post-scan-actions/azure-python-slack-notification/version.json)
+          echo "slack notification version: $slack_notification_version"
+          echo "slack_notification=$slack_notification_version" >> $GITHUB_OUTPUT
+
+          teams_notification_version=$(jq -r '.version' post-scan-actions/azure-python-teams-notification/version.json)
+          echo "teams notification version: $teams_notification_version"
+          echo "teams_notification=$teams_notification_version" >> $GITHUB_OUTPUT
+
+      - name: Handle for Quarantine or Promote Plugin
+        if: contains(steps.changed-files.outputs.all_changed_files, 'azure-python-promote-or-quarantine')
+        uses: ./.github/actions/release-azure-artifact
+        with:
+          plugin_path: post-scan-actions/azure-python-promote-or-quarantine
+          plugin_version: ${{ steps.plugin_versions.outputs.promote_or_quarantine }}
+          plugin_name: azure-python-promote-or-quarantine
+          plugin_functions: "[\"promoteOrQuarantineFunction\"]"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Handle for Slack Notification Plugin
+        if: contains(steps.changed-files.outputs.all_changed_files, 'azure-python-slack-notification')
+        uses: ./.github/actions/release-azure-artifact
+        with:
+          plugin_path: post-scan-actions/azure-python-slack-notification
+          plugin_version: ${{ steps.plugin_versions.outputs.slack_notification }}
+          plugin_name: azure-python-slack-notification
+          plugin_functions: "[\"slackNotification\"]"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Handle for Teams Notification Plugin
+        if: contains(steps.changed-files.outputs.all_changed_files, 'azure-python-teams-notification')
+        uses: ./.github/actions/release-azure-artifact
+        with:
+          plugin_path: post-scan-actions/azure-python-teams-notification
+          plugin_version: ${{ steps.plugin_versions.outputs.teams_notification }}
+          plugin_name: azure-python-teams-notification
+          plugin_functions: "[\"teamsNotification\"]"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
