@@ -15,7 +15,9 @@
     "Spdx",
     "strftime",
     "tfvars",
-    "urlunsplit"
+    "urlunsplit",
+    "vnet",
+    "ampls"
   ],
   "ignoreWords": [
     "fileb"
