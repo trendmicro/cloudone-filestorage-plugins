@@ -13,15 +13,12 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.0.6
+    SemanticVersion: 1.1.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
   ScanningBucketName:
     Type: String
-    AllowedPattern: ^[0-9a-z]+([0-9a-z-]*[0-9a-z])*$
-    ConstraintDescription: S3 bucket name can include numbers, lowercase letters,
-      and hyphens (-). It cannot start or end with a hyphen (-).
     Description: The S3 bucket scanned by Trend Micro Cloud One File Storage Security.
   ScanResultTopicARN:
     Type: String
@@ -56,6 +53,23 @@ Parameters:
     Description: |
       The method by which files were quarantined.
       (Options: move, copy)
+  VpcSubnetId:
+    Type: String
+    Default: ''
+    Description: |
+      [Optional] The subnet ID of the VPC where the S3 bucket is located.
+      Leave it blank to disable using a VPC.
+  VpcSecurityGroupId:
+    Type: String
+    Default: ''
+    Description: |
+      [Optional] The security group ID of the VPC where the S3 bucket is located.
+      Leave it blank to disable using a VPC.
+  KMSKeyARN:
+    Type: String
+    Default: ''
+    Description: |
+      [Optional] The ARN of the AWS KMS key used for Encryption.
   ACL:
     Type: String
     AllowedValues:
@@ -71,6 +85,11 @@ Parameters:
     Description: |
       [Optional] Apply an access control list (ACL) on the file after it has been promoted or quarantined.
       (Options: private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control)
+  PermissionsBoundary:
+    Type: String
+    Default: ''
+    Description: |
+      [Optional] The ARN of the IAM permission boundary. Leave it blank to disable using a permission boundary.
 
 Conditions:
   PromoteEnabled:
@@ -79,8 +98,39 @@ Conditions:
     !Not [!Equals [!Ref QuarantineBucketName, '']]
   PutACL:
     !Not [!Equals [!Ref ACL, '']]
+  IsBucketSSEKMSEnabled:
+      !Not [!Equals [!Ref KMSKeyARN, '']]
+  HasPermissionsBoundary:
+    !Not [!Equals [!Ref PermissionsBoundary, '']]
+  VpcEnabled: !Not [!Or [!Equals [!Ref VpcSubnetId, ''], !Equals [!Ref VpcSecurityGroupId, '']]]
 
 Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: lambda-execute
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+
   PromoteOrQuarantineLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -90,12 +140,21 @@ Resources:
       MemorySize: 512
       Timeout: 30
       Tracing: Active
+      VpcConfig:
+        !If
+          - VpcEnabled
+          - SubnetIds:
+              - !Ref VpcSubnetId
+            SecurityGroupIds:
+              - !Ref VpcSecurityGroupId
+          - !Ref AWS::NoValue
       Environment:
         Variables:
           PROMOTEBUCKET: !Ref PromoteBucketName
           PROMOTEMODE: !Ref PromoteMode
           QUARANTINEBUCKET: !Ref QuarantineBucketName
           QUARANTINEMODE: !Ref QuarantineMode
+          KMSKEYARN: !Ref KMSKeyARN
           ACL: !Ref ACL
       Policies:
         - Statement:
@@ -109,6 +168,16 @@ Resources:
         - Statement:
             Effect: Allow
             Action:
+              - !If
+                - IsBucketSSEKMSEnabled
+                - kms:Decrypt
+                - !Ref AWS::NoValue
+            Resource:
+              - !Ref KMSKeyARN
+        - Statement:
+            Effect: Allow
+            Action:
+              - s3:ListBucket
               - s3:PutObject
               - s3:PutObjectTagging
               - !If
@@ -124,6 +193,10 @@ Resources:
                 - QuarantineEnabled
                 - !Sub arn:${AWS::Partition}:s3:::${QuarantineBucketName}/*
                 - !Ref AWS::NoValue
+      PermissionsBoundary: !If
+        - HasPermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
       Events:
         ScanResult:
           Type: SNS
