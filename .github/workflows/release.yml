@@ -41,7 +41,7 @@ jobs:
 
       - name: Get changed files
         id: changed_files
-        uses: tj-actions/changed-files@v35.9.2
+        uses: tj-actions/changed-files@v36
         with:
           json: true
           files: |
@@ -63,6 +63,7 @@ jobs:
     needs:
       - extract-changed-azure-plugins
       - declare-variables
+    if: ${{ needs.extract-changed-azure-plugins.outputs.changed_plugins != '[]' }}
     strategy:
       matrix:
         plugin: ${{ fromJSON(needs.extract-changed-azure-plugins.outputs.changed_plugins) }}
