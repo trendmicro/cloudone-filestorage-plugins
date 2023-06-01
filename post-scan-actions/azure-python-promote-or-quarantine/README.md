@@ -19,7 +19,7 @@ After a scan occurs, this example Azure function places clean files in one stora
 
 ## Installation
 
-### 1. Deploy Azure function app
+### Deploy Azure function app
 
 1. Log in to the Azure CLI and switch to the Azure subscription to deploy resources:
 
@@ -55,16 +55,6 @@ After a scan occurs, this example Azure function places clean files in one stora
     ``` bash
     promoteMode=copy
     quarantineMode=copy
-    ```
-
-### 2. Publish Azure function
-
-1. Download [cloudone-filestorage-plugins repository](https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master)
-1. Navigate to `post-scan-actions/azure-python-promote-or-quarantine/promoteOrQuarantineFunction`
-1. Publish the function to the function app:
-
-    ```bash
-    func azure functionapp publish $FUNCTION_NAME --python
     ```
 
 ## Test the function
