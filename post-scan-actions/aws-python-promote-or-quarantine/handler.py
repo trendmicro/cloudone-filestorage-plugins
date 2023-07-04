@@ -54,6 +54,7 @@ CODE_MESSAGES = {
     106: 'incomplete archive file extraction due to corrupted compression file',
     107: 'incomplete archive file extraction due to archive file encryption',
     108: 'incomplete scan due to Microsoft Office file encryption',
+    109: 'incomplete scan due to PDF encryption',
     CODE_MISC: 'incomplete scan due to miscellaneous reason. Provide the fss-scan-detail-code tag value to Trend Micro support',
 }
 
