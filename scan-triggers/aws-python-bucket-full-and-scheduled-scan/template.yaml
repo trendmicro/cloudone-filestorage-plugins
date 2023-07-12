@@ -432,13 +432,6 @@ Resources:
           s3_client_path = boto3.client('s3', region, config=Config(s3={'addressing_style': 'path'}, signature_version='s3v4'))
           s3_client_virtual = boto3.client('s3', region, config=Config(s3={'addressing_style': 'virtual'}, signature_version='s3v4'))
 
-          try:
-              with open('version.json') as version_file:
-                  version = json.load(version_file)
-                  print(f'version: {version}')
-          except Exception as ex:
-              print('failed to get version: ' + str(ex))
-
           def create_presigned_url(bucket_name, object_name, expiration):
               """Generate a presigned URL to share an S3 object
 
