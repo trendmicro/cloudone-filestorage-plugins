@@ -7,19 +7,19 @@ variable "AWSRegion" {
 variable "KMSKeyARNForDLQSSE" {
   type = string
   default = ""
-  description = "The ARN for the KMS master key used to encrypt messages of DLQ for storage stack. Leave it blank if you haven't used your own CMK for SQS server-side encryption on the queue ARNs you provided."
+  description = "The ARN for the KMS master key used to encrypt messages in SQS. Leave it blank if you haven't used your own CMK for SQS server-side encryption."
 }
 
 variable "KMSKeyARNForTopicSSE" {
   type = string
   default = ""
-  description = "The ARN for the KMS master key used to encrypt messages in SNS. Leave it blank if you haven't used your own CMK for SNS server-side encryption."
+  description = "The ARN for the KMS master keys used to encrypt messages in SNS scanResultTopic. Leave it blank if you haven't used your own CMK for SNS server-side encryption."
 }
 
 variable "KMSKeyARNsForBucketSSE" {
   type = string
   default = ""
-  description = "The ARN for the KMS master keys used to encrypt messages in SNS scanResultTopic. Leave it blank if you haven't used your own CMK for SNS server-side encryption."
+  description = "A comma-separated list of ARNs for the KMS master keys used to encrypt S3 bucket objects. Leave it blank if you haven't enabled SSE-KMS for the buckets."
 }
 
 variable "ReportObjectKey" {
@@ -79,5 +79,5 @@ variable "ExternalID" {
 variable "EnableCrossAccountScanning" {
   type = bool
   default = false
-  description = "Enable this to scan objects in other accounts. You will need to provide the bucket ARNs and SQS queue ARNs in the next section."
+  description = "Enable cross account scanning within the same organization."
 }
