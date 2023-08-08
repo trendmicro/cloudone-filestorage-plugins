@@ -9,6 +9,20 @@
                 "description": "The name of the Microsoft Teams function to make."
             }
         },
+        "functionsPackageLocation": {
+            "type": "string",
+            "defaultValue": "https://github.com/trendmicro/cloudone-filestorage-plugins/releases/download/azure-python-teams-notification-1.0.0",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
+        "sharedAccessSignature": {
+            "type": "secureString",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
         "teamsWebHookURL": {
             "type": "string",
             "metadata": {
@@ -24,6 +38,8 @@
     },
     "variables": {
         "location": "[resourceGroup().location]",
+        "unifiedSAS": "[if(empty(parameters('sharedAccessSignature')), '', if(startsWith(parameters('sharedAccessSignature'), '?'), parameters('sharedAccessSignature'), concat('?', parameters('sharedAccessSignature'))))]",
+        "functionPackageLink": "[concat(parameters('functionsPackageLocation') ,'/teamsNotification.zip', variables('unifiedSAS'))]",
         "functionAppName": "[parameters('fssTeamsFunctionName')]",
         "hostingPlanName": "[parameters('fssTeamsFunctionName')]",
         "applicationInsightsName": "[parameters('fssTeamsFunctionName')]",
@@ -100,8 +116,12 @@
                             "value": "[toLower(variables('functionAppName'))]"
                         },
                         {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "[variables('functionPackageLink')]"
+                        },
+                        {
                             "name": "FUNCTIONS_EXTENSION_VERSION",
-                            "value": "~3"
+                            "value": "~4"
                         },
                         {
                             "name": "WEBSITE_NODE_DEFAULT_VERSION",

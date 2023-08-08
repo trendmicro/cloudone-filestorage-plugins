@@ -1,3 +1,18 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: cloudone-filestorage-plugin-trigger-full-scheduled-scan
+    Description: It deploys all the required resources to trigger a full scan, scheduled or not, on a S3 bucket leveraging an existing Trend File Storage Security deployment.
+    Author: Trend Cloud One File Storage Security
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: ../../LICENSE
+    ReadmeUrl: README.md
+    Labels: ['trendmicro','cloudone','filestorage','s3','bucket','plugin','full','full-scan','scheduled','scheduled-scan']
+    HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
+    SemanticVersion: 2.0.0
+    SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/scan-triggers/aws-python-bucket-full-and-scheduled-scan
 Parameters:
   BucketName:
     Type: String
@@ -309,9 +324,9 @@ Resources:
               const scanLimitPerIteration = event.limit;
               const bucket = event.bucket;
               const allKeys = await fetchKeys(stateBucket, stateKey);
-              
+
               const filtered = filterKeys(allKeys, scanLimitPerIteration);
-              
+
               // Rewrite file in bucket with remaining keys
               if (filtered.remainingKeys){
                   await writeToBucket(filtered.remainingKeys, stateKey, stateBucket);
@@ -325,7 +340,7 @@ Resources:
                   stateBucket: event.stateBucket,
                   stateKey: event.stateKey
               };
-              
+
               return response;
           };
       Role:
@@ -416,13 +431,6 @@ Resources:
           region = boto3.session.Session().region_name
           s3_client_path = boto3.client('s3', region, config=Config(s3={'addressing_style': 'path'}, signature_version='s3v4'))
           s3_client_virtual = boto3.client('s3', region, config=Config(s3={'addressing_style': 'virtual'}, signature_version='s3v4'))
-
-          try:
-              with open('version.json') as version_file:
-                  version = json.load(version_file)
-                  print(f'version: {version}')
-          except Exception as ex:
-              print('failed to get version: ' + str(ex))
 
           def create_presigned_url(bucket_name, object_name, expiration):
               """Generate a presigned URL to share an S3 object
@@ -568,7 +576,7 @@ Resources:
         Fn::Join:
           - ""
           - - |-2
-              
+
                     {
                       "Comment": "A machine that loops trough all files a bucket to scan them with File Storage Security.",
                       "StartAt": "Filter first 1000 keys to scan",
@@ -769,7 +777,7 @@ Resources:
         Fn::Join:
           - ""
           - - |-2
-              
+
                     {
                       "Comment": "Kicks of a Full Scan using File Storage Security.",
                       "StartAt": "List all keys in bucket",
@@ -899,4 +907,3 @@ Outputs:
           - ":"
           - Ref: AWS::AccountId
           - :stateMachine:fullScanStarterStateMachine
-
