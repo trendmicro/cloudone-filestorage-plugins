@@ -1,7 +1,7 @@
 variable "AWSRegion" {
   type = string
   default = ""
-  description = "The AWS Region that the Stack will run"
+  description = "The AWS Region that the stack will run."
 }
 
 variable "KMSKeyARNForDLQSSE" {
