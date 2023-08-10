@@ -43,9 +43,9 @@ Deploy File Storage Security stacks across different cloud providers with Terraf
 
 - Deployment
 
-    1. `terraform -chdir=account-scanner init`
-    2. `terraform -chdir=account-scanner plan -var="AWSRegion=TheRegionOfDeployment"  -var="ExternalID=YourExternalID"`
-    3. `terraform -chdir=account-scanner apply -var="AWSRegion=TheRegionOfDeployment"  -var="ExternalID=YourExternalID"`
+    1. `terraform -chdir=account-scanner-stack init`
+    2. `terraform -chdir=account-scanner-stack plan -var="AWSRegion=TheRegionOfDeployment" -var="ExternalID=YourExternalID"`
+    3. `terraform -chdir=account-scanner-stack apply -var="AWSRegion=TheRegionOfDeployment" -var="ExternalID=YourExternalID"`
 
 - Clean Up
-    - `terraform -chdir=account-scanner destroy -var="AWSRegion=TheRegionOfDeployment"`
+    - `terraform -chdir=account-scanner-stack destroy -var="AWSRegion=TheRegionOfDeployment"`
