@@ -13,7 +13,7 @@ variable "CFNStackName" {
 variable "TemplateURL" {
   type = string
   default = "https://file-storage-security.s3.amazonaws.com/latest/templates/FSS-Account-Scanner-Stack.template"
-  description = "The URL of the CloudFormation template."
+  description = "The S3 URL of the account scanner CloudFormation template."
 }
 
 variable "KMSKeyARNForDLQSSE" {
