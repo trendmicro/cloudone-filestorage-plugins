@@ -5,6 +5,8 @@ import time
 import urllib.parse
 
 import boto3
+from boto3.s3.transfer import TransferConfig
+from botocore.client import Config
 from botocore.exceptions import ClientError
 
 VALID_ACL = {
@@ -16,6 +18,17 @@ VALID_ACL = {
     'bucket-owner-read',
     'bucket-owner-full-control',
 }
+
+VALID_METADATA = [
+    'CacheControl',
+    'ContentDisposition',
+    'ContentEncoding',
+    'ContentLanguage',
+    'ContentType',
+    'Metadata',
+    'WebsiteRedirectLocation',
+    'Expires'
+]
 
 MODES = {
     'move',
@@ -41,10 +54,18 @@ CODE_MESSAGES = {
     106: 'incomplete archive file extraction due to corrupted compression file',
     107: 'incomplete archive file extraction due to archive file encryption',
     108: 'incomplete scan due to Microsoft Office file encryption',
-    CODE_MISC: 'incomplete scan due to miscellaneous reason; provide the fss-scan-detail-code tag value to Trend Micro support',
+    109: 'incomplete scan due to PDF encryption',
+    CODE_MISC: 'incomplete scan due to miscellaneous reason. Provide the fss-scan-detail-code tag value to Trend Micro support',
 }
 
-s3 = boto3.client('s3')
+S3_MAX_CONCURRENCY = 940
+S3_MULTIPART_CHUNK_SIZE = 16 * 1024 * 1024   # 16MB
+S3_MAX_POOL_CONNECTIONS = 940
+S3_MAX_ATTEMPTS = 100
+
+transfer_config = TransferConfig(max_concurrency=S3_MAX_CONCURRENCY, multipart_chunksize=S3_MULTIPART_CHUNK_SIZE)
+config = Config(max_pool_connections=S3_MAX_POOL_CONNECTIONS, retries = {'max_attempts': S3_MAX_ATTEMPTS})
+s3 = boto3.client('s3', config=config)
 
 def get_mode_from_env(mode_key):
     mode = os.environ.get(mode_key, 'move').lower()
@@ -81,11 +102,19 @@ def get_existing_tag_set(bucket_name, object_key):
         print('failed to get existing tags: ' + str(ex))
         return None
 
-def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, acl=None):
+def get_metadata(bucket_name, object_key):
+    try:
+        metadata = s3.head_object(Bucket=bucket_name, Key=object_key)
+        return dict(filter(lambda elem: elem[0] in VALID_METADATA, metadata.items()))
+    except ClientError as ex:
+        print('failed to get existing metadata: ' + str(ex))
+        return None
+
+def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, metadata, acl=None):
     params = {
         'TaggingDirective': 'REPLACE',
         'Tagging': '&'.join(tags),
-
+        **(metadata if metadata else {})
     }
 
     copy_source = {
@@ -96,7 +125,7 @@ def copy_object(source_bucket, source_key, dest_bucket, dest_key, tags, acl=None
     if acl and acl in VALID_ACL:
         params['ACL'] = acl
 
-    s3.copy(copy_source, dest_bucket, dest_key, params)
+    s3.copy(copy_source, dest_bucket, dest_key, params, Config=transfer_config)
 
 def delete_objects(bucket, prefix, objects):
     objects = {'Objects': [{'Key': prefix + o} for o in objects]}
@@ -151,12 +180,15 @@ def lambda_handler(event, context):
         if existing_tag_set:
             tags.extend(existing_tag_set)
 
+        metadata = get_metadata(src_bucket, object_key)
+
         copy_object(
             source_bucket=src_bucket,
             dest_bucket=dst_bucket,
             source_key=object_key,
             dest_key=object_key,
             tags=tags,
+            metadata=metadata,
             acl=acl,
         )
 

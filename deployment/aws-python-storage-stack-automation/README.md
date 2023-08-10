@@ -20,7 +20,8 @@ Automated process to deploy an FSS storage stack on each new S3 bucket using Lam
       - Select: **[storage_stack_lifecycle.yaml](https://github.com/trendmicro/cloudone-filestorage-plugins/blob/master/deployment/aws-python-storage-stack-automation/storage_stack_lifecycle.yaml)**
       - Click **Next**
       - StackName: `Enter name for stack`
-      - C1WSAPI: [Cloud One Workload Security API Key](https://cloudone.trendmicro.com/docs/file-storage-security/api-create-stack/#Prerequisite)
+      - C1API: [Cloud One API Key](https://cloudone.trendmicro.com/docs/account-and-user-management/c1-api-key/)
+      - C1RegionEndpoint: [Cloud One Regions](https://cloudone.trendmicro.com/docs/account-and-user-management/c1-regions/)
       - SQSURL: `http://scanner-stack-sqs-queue-url.com`
       - StackName: `Enter name of Scanner Stack`
       - Click **Create Stack**

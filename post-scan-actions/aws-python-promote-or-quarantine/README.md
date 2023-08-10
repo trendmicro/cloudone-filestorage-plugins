@@ -26,6 +26,19 @@ After a scan occurs, this example Lambda function places clean files in one buck
 1. Visit [the app's page on the AWS Lambda Console](https://console.aws.amazon.com/lambda/home?#/create/app?applicationId=arn:aws:serverlessrepo:us-east-1:415485722356:applications/cloudone-filestorage-plugin-action-promote-or-quarantine).
 2. Click the `Copy as SAM Resource` button and paste the copied YAML into your SAM template, filling in any required parameters.
 
+### Terraform
+
+Make sure that you have Terraform and AWS CLI installed and configured, then go to terraform folder and change appropriately the values at the variables in the `variables.tf` file.
+
+Then you can execute the following:
+
+```terraform
+   cd terraform
+   terraform init
+   terraform plan
+   terraform apply -auto-approve
+```
+
 ### Other Options
 
 Check out [other installation methods](./other-installation-methods.md), such as AWS CLI or SAM CLI.

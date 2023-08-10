@@ -38,16 +38,22 @@ CODE_MESSAGES = {
     106: 'incomplete archive file extraction due to corrupted compression file',
     107: 'incomplete archive file extraction due to archive file encryption',
     108: 'incomplete scan due to Microsoft Office file encryption',
-    CODE_MISC: 'incomplete scan due to miscellaneous reason; provide the fss-scan-detail-code tag value to Trend Micro support',
+    109: 'incomplete scan due to PDF encryption',
+    CODE_MISC: 'incomplete scan due to miscellaneous reason. Provide the fss-scan-detail-code tag value to Trend Micro support',
 }
 
 def main(message: func.ServiceBusMessage):
     # Log the Service Bus Message as plaintext
 
     message_body = message.get_body().decode("utf-8")
+    message = json.loads(message_body)
 
     logging.info('Python ServiceBus topic trigger processed message.')
     logging.info(f'Message Body: {message_body}')
+
+    if message['scanner_status'] != 0:
+        print('Skip: ', message['scanner_status_message'])
+        return
 
     quarantine_storage_connection_string = os.environ.get('QUARANTINE_STORAGE_CONNECTION_STRING')
     promote_storage_connection_string = os.environ.get('PROMOTE_STORAGE_CONNECTION_STRING')
@@ -55,7 +61,6 @@ def main(message: func.ServiceBusMessage):
     promote_mode = get_promote_mode()
     quarantine_mode = get_quarantine_mode()
 
-    message = json.loads(message_body)
     file_url = message['file_url']
     (_, blob_container, blob_name) = parse_blob_information(file_url)
 
