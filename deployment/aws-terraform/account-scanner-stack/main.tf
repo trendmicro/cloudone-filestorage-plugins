@@ -1,5 +1,5 @@
 resource "aws_cloudformation_stack" "fss-account-scanner-by-tf" {
-  name = "fss-account-scanner-by-tf"
+  name = var.CFNStackName
   capabilities = ["CAPABILITY_IAM"]
 
   parameters = {
@@ -18,6 +18,6 @@ resource "aws_cloudformation_stack" "fss-account-scanner-by-tf" {
     EnableCrossAccountScanning = var.EnableCrossAccountScanning
   }
 
-  template_url="https://file-storage-security.s3.amazonaws.com/latest/templates/FSS-Account-Scanner-Stack.template"
+  template_url = var.TemplateURL
 
 }

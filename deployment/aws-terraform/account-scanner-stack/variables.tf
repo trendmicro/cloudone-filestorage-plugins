@@ -4,6 +4,18 @@ variable "AWSRegion" {
   description = "The AWS Region that the stack will run."
 }
 
+variable "CFNStackName" {
+  type = string
+  default = "fss-account-scanner-by-tf"
+  description = "CloudFormation stack name."
+}
+
+variable "TemplateURL" {
+  type = string
+  default = "https://file-storage-security.s3.amazonaws.com/latest/templates/FSS-Account-Scanner-Stack.template"
+  description = "The URL of the CloudFormation template."
+}
+
 variable "KMSKeyARNForDLQSSE" {
   type = string
   default = ""
