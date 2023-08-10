@@ -43,7 +43,7 @@ variable "ScannerEphemeralStorage" {
 variable "QuarantineBucket" {
   type = string
   default = ""
-  description = "[Optional] The bucket to quarantine malicious files. The bucket region should be the same region as the account scanner stack. Leave the bucket blank to disable quarantining"
+  description = "[Optional] The bucket to quarantine malicious files. The bucket region should be the same region as the account scanner stack. Leave it blank to disable quarantining"
 }
 
 variable "FSSBucketName" {
