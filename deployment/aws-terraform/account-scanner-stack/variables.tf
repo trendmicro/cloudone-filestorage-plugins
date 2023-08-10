@@ -25,7 +25,7 @@ variable "KMSKeyARNForDLQSSE" {
 variable "KMSKeyARNForTopicSSE" {
   type = string
   default = ""
-  description = "The ARN for the KMS master keys used to encrypt messages in SNS scanResultTopic. Leave it blank if you haven't used your own CMK for SNS server-side encryption."
+  description = "The ARN for the KMS master key used to encrypt messages in SNS scanResultTopic. Leave it blank if you haven't used your own CMK for SNS server-side encryption."
 }
 
 variable "KMSKeyARNsForBucketSSE" {
