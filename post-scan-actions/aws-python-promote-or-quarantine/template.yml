@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.1.0
+    SemanticVersion: 1.2.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
@@ -99,7 +99,7 @@ Conditions:
   PutACL:
     !Not [!Equals [!Ref ACL, '']]
   IsBucketSSEKMSEnabled:
-      !Not [!Equals [!Ref KMSKeyARN, '']]
+    !Not [!Equals [!Ref KMSKeyARN, '']]
   HasPermissionsBoundary:
     !Not [!Equals [!Ref PermissionsBoundary, '']]
   VpcEnabled: !Not [!Or [!Equals [!Ref VpcSubnetId, ''], !Equals [!Ref VpcSecurityGroupId, '']]]
@@ -130,7 +130,39 @@ Resources:
                   - logs:CreateLogStream
                   - logs:PutLogEvents
                 Resource: 'arn:aws:logs:*:*:*'
-
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:GetObjectTagging
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${ScanningBucketName}/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:PutObject
+                  - s3:PutObjectTagging
+                  - !If
+                    - PutACL
+                    - s3:PutObjectAcl
+                    - !Ref AWS::NoValue
+                Resource:
+                  - !If
+                    - PromoteEnabled
+                    - !Sub arn:${AWS::Partition}:s3:::${PromoteBucketName}/*
+                    - !Ref AWS::NoValue
+                  - !If
+                    - QuarantineEnabled
+                    - !Sub arn:${AWS::Partition}:s3:::${QuarantineBucketName}/*
+                    - !Ref AWS::NoValue
+              - !If 
+                - IsBucketSSEKMSEnabled
+                - Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                    - kms:GenerateDataKey
+                  Resource: !Ref KMSKeyARN
+                - !Ref AWS::NoValue
   PromoteOrQuarantineLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -140,6 +172,7 @@ Resources:
       MemorySize: 512
       Timeout: 30
       Tracing: Active
+      Role: !GetAtt LambdaExecutionRole.Arn
       VpcConfig:
         !If
           - VpcEnabled
@@ -156,43 +189,6 @@ Resources:
           QUARANTINEMODE: !Ref QuarantineMode
           KMSKEYARN: !Ref KMSKeyARN
           ACL: !Ref ACL
-      Policies:
-        - Statement:
-            Effect: Allow
-            Action:
-              - s3:GetObject
-              - s3:DeleteObject
-              - s3:GetObjectTagging
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${ScanningBucketName}/*
-        - Statement:
-            Effect: Allow
-            Action:
-              - !If
-                - IsBucketSSEKMSEnabled
-                - kms:Decrypt
-                - !Ref AWS::NoValue
-            Resource:
-              - !Ref KMSKeyARN
-        - Statement:
-            Effect: Allow
-            Action:
-              - s3:ListBucket
-              - s3:PutObject
-              - s3:PutObjectTagging
-              - !If
-                - PutACL
-                - s3:PutObjectAcl
-                - !Ref AWS::NoValue
-            Resource:
-              - !If
-                - PromoteEnabled
-                - !Sub arn:${AWS::Partition}:s3:::${PromoteBucketName}/*
-                - !Ref AWS::NoValue
-              - !If
-                - QuarantineEnabled
-                - !Sub arn:${AWS::Partition}:s3:::${QuarantineBucketName}/*
-                - !Ref AWS::NoValue
       PermissionsBoundary: !If
         - HasPermissionsBoundary
         - !Ref PermissionsBoundary
