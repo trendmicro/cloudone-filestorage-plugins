@@ -1,0 +1,42 @@
+name: Packaging Azure Functions (Python)
+description: Package your Python-based Azure Functions into zip files for use in the release process. The Azure Function App can utilize the WEBSITE_RUN_FROM_PACKAGE configuration to execute the functions using the packaged zip files.
+
+inputs:
+  artifacts_dir:
+    description: The directory to store the zip files
+    required: true
+  functions:
+    description: The functions to be packaged
+    required: true
+  plugin_path:
+    description: The path of the plugin
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Install Package
+      shell: bash
+      run: |
+        python --version
+
+        for function in $(echo '${{ inputs.functions }}' | jq -r '.[]'); do
+          pip install --target ${{ inputs.plugin_path }}/$function/.python_packages/lib/site-packages -r ${{ inputs.plugin_path }}/$function/requirements.txt
+        done
+
+    - name: Zip Files
+      shell: bash
+      run: |
+        mkdir -p ${{ inputs.artifacts_dir }}
+
+        for function in $(echo '${{ inputs.functions }}' | jq -r '.[]'); do
+          cd ${{ inputs.plugin_path }}/$function
+          zip -rq ${{ inputs.artifacts_dir }}/$function.zip . -x "*.funcignore" "*requirements.txt"
+          cd ${{ github.workspace }}
+        done

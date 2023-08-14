@@ -1,0 +1,909 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: cloudone-filestorage-plugin-trigger-full-scheduled-scan
+    Description: It deploys all the required resources to trigger a full scan, scheduled or not, on a S3 bucket leveraging an existing Trend File Storage Security deployment.
+    Author: Trend Cloud One File Storage Security
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: ../../LICENSE
+    ReadmeUrl: README.md
+    Labels: ['trendmicro','cloudone','filestorage','s3','bucket','plugin','full','full-scan','scheduled','scheduled-scan']
+    HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
+    SemanticVersion: 2.0.0
+    SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/scan-triggers/aws-python-bucket-full-and-scheduled-scan
+Parameters:
+  BucketName:
+    Type: String
+    Description: Name of a bucket that you want to full scan. Make sure you have FSS Storage Stack deployed around it already.
+  ScannerQueueArn:
+    Type: String
+    Description: ARN of the ScannerQueue queue. Something like arn:aws:sqs:us-east-1:123456789012:All-in-one-TM-FileStorageSecurity-ScannerStack-IT1V5O-ScannerQueue-1IOQHTGGGZYFL
+  ScannerQueueUrl:
+    Type: String
+    Description: URL of the ScannerQueue queue. Something like https://sqs.us-east-1.amazonaws.com/123456789012/All-in-one-TM-FileStorageSecurity-ScannerStack-IT1V5O-ScannerQueue-1IOQHTGGGZYFL
+  ScanResultTopicArn:
+    Type: String
+    Description: ARN of ScanResultTopic topic. Something like arn:aws:sns:us-east-1:123456789012:All-in-one-TM-FileStorageSecurity-StorageStack-1E00QCLBZW7M4-ScanResultTopic-1W7RZ7PBZZUJO
+  Schedule:
+    Type: String
+    Default: ""
+    Description: "Set a schedule for full scan. If empty, there will not be a scheduled scan. Defaults to empty. More info at: https://docs.aws.amazon.com/lambda/latest/dg/services-cloudwatchevents-expressions.html"
+Conditions:
+  SetSchedule:
+    Fn::Not:
+      - Fn::Equals:
+          - ""
+          - Ref: Schedule
+Resources:
+  StateBucket:
+    Type: AWS::S3::Bucket
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+  PaginatorExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  PaginatorExecutionRoleDefaultPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: s3:ListBucket
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":s3:::"
+                  - Ref: BucketName
+          - Action:
+              - s3:Abort*
+              - s3:DeleteObject*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - StateBucket
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - StateBucket
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+      PolicyName: PaginatorExecutionRoleDefaultPolicy
+      Roles:
+        - Ref: PaginatorExecutionRole
+  PaginatorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: "const AWS = require('aws-sdk');
+
+          const s3 = new AWS.S3();
+
+
+          const STATE_BUCKET = process.env.STATE_BUCKET;
+
+          const KEY_WITH_KEYS_TO_SCAN ='keys';
+
+
+          exports.lambda_handler = async (event) => {
+
+          \  console.log(event);
+
+          \  const bucket = event.bucket;
+
+          \  const allKeys = await getAllKeys(bucket);
+
+          \  const writeResult = await writeToBucket(allKeys, KEY_WITH_KEYS_TO_SCAN, STATE_BUCKET);
+
+
+          \  return {
+
+          \    bucket: bucket,
+
+          \    stateBucket: STATE_BUCKET,
+
+          \    stateKey: KEY_WITH_KEYS_TO_SCAN,
+
+          \    limit: 500
+
+          \  }
+
+          };
+
+
+          const getKeysInPage = async (bucket, continuationToken) => {
+
+          \  const params = {
+
+          \    Bucket: bucket,
+
+          \    ContinuationToken: continuationToken? continuationToken : null
+
+          \  };
+
+          \  const response = await s3.listObjectsV2(params).promise();
+
+          \  return {
+
+          \    keys: response.Contents.map(object => object.Key),
+
+          \    nextContinuationToken: response.NextContinuationToken
+
+          \  };
+
+          };
+
+
+          const getAllKeys = async (bucket) => {
+
+          \  let {keys, nextContinuationToken} = await getKeysInPage(bucket);
+
+          \  while (nextContinuationToken){
+
+          \    const result = await getKeysInPage(bucket, nextContinuationToken);
+
+          \    console.log(result);
+
+          \    keys.push(...result.keys);
+
+          \    nextContinuationToken = result.nextContinuationToken? result.nextContinuationToken : null;
+
+          \  }
+
+          \  return keys;
+
+          };
+
+
+          const writeToBucket = async (content, key, bucket) => {
+
+          \  try {
+
+          \    const params = {
+
+          \      Bucket: bucket,
+
+          \      Key: key,
+
+          \      ContentType:'binary',
+
+          \      Body: Buffer.from(JSON.stringify(content))
+
+          \    };
+
+          \    const result = await s3.putObject(params).promise();
+
+          \    return result;
+
+          \  } catch (error) {
+
+          \    return error;
+
+          \  }
+
+          };
+
+          \  "
+      Role:
+        Fn::GetAtt:
+          - PaginatorExecutionRole
+          - Arn
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          STATE_BUCKET:
+            Ref: StateBucket
+      Handler: index.lambda_handler
+      MemorySize: 1024
+      Runtime: nodejs16.x
+      Timeout: 900
+    DependsOn:
+      - PaginatorExecutionRoleDefaultPolicy
+      - PaginatorExecutionRole
+  FilterExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  FilterExecutionRoleDefaultPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:Abort*
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:GetObject*
+              - s3:List*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - StateBucket
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - StateBucket
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+      PolicyName: FilterExecutionRoleDefaultPolicy
+      Roles:
+        - Ref: FilterExecutionRole
+  FilterFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const s3 = new AWS.S3();
+
+          const fetchKeys = async (bucket, key) => {
+              try {
+                  const params = {
+                      Bucket: bucket,
+                      Key: key
+                  };
+                  const result = await s3.getObject(params).promise();
+                  const keys = JSON.parse(result.Body.toString('utf-8'));
+                  return keys;
+              } catch (error) {
+                  throw error;
+              }
+          };
+
+          const writeToBucket = async (content, key, bucket) => {
+              try {
+                const params = {
+                  Bucket: bucket,
+                  Key: key,
+                  ContentType:'binary',
+                  Body: Buffer.from(JSON.stringify(content))
+                };
+                const result = await s3.putObject(params).promise();
+                return result;
+              } catch (error) {
+                return error;
+              }
+          };
+
+          const filterKeys = (keys, limit) => {
+              const keysToScan = keys.slice(0, limit);
+              const remainingKeys = keys.slice(limit);
+              return {
+                  keysToScan,
+                  remainingKeys
+              };
+          };
+
+          exports.lambda_handler = async (event) => {
+              console.log(event);
+              const stateBucket = event.stateBucket;
+              const stateKey = event.stateKey;
+              const scanLimitPerIteration = event.limit;
+              const bucket = event.bucket;
+              const allKeys = await fetchKeys(stateBucket, stateKey);
+
+              const filtered = filterKeys(allKeys, scanLimitPerIteration);
+
+              // Rewrite file in bucket with remaining keys
+              if (filtered.remainingKeys){
+                  await writeToBucket(filtered.remainingKeys, stateKey, stateBucket);
+              }
+
+              const response = {
+                  keys: filtered.keysToScan,
+                  bucket: bucket,
+                  limit: scanLimitPerIteration,
+                  remainingKeysLength: filtered.remainingKeys? filtered.remainingKeys.length : null,
+                  stateBucket: event.stateBucket,
+                  stateKey: event.stateKey
+              };
+
+              return response;
+          };
+      Role:
+        Fn::GetAtt:
+          - FilterExecutionRole
+          - Arn
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          BUCKET_NAME:
+            Ref: BucketName
+      Handler: index.lambda_handler
+      MemorySize: 512
+      Runtime: nodejs16.x
+      Timeout: 900
+    DependsOn:
+      - FilterExecutionRoleDefaultPolicy
+      - FilterExecutionRole
+  ScanOneObjectExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  ScanOneObjectExecutionRoleDefaultPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:GetObject
+              - s3:PutObjectTagging
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - ":s3:::"
+                  - Ref: BucketName
+                  - /*
+          - Action: sqs:SendMessage
+            Effect: Allow
+            Resource:
+              Ref: ScannerQueueArn
+        Version: "2012-10-17"
+      PolicyName: ScanOneObjectExecutionRoleDefaultPolicy
+      Roles:
+        - Ref: ScanOneObjectExecutionRole
+  ScanOneObjectFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        ZipFile: |-
+          # Copyright (C) 2021 Trend Micro Inc. All rights reserved.
+
+          import json
+          import os
+          import logging
+          import boto3
+          import botocore
+          from botocore.config import Config
+          from botocore.exceptions import ClientError
+          import urllib.parse
+          import uuid
+          import datetime
+
+          sqs_url = os.environ['SQSUrl']
+          print('scanner queue URL: ' + sqs_url)
+          sqs_region = sqs_url.split('.')[1]
+          print('scanner queue region: ' + sqs_region)
+          sqs_endpoint_url = 'https://sqs.{0}.amazonaws.com'.format(sqs_region)
+          print('scanner queue endpoint URL: ' + sqs_endpoint_url)
+          report_object_key = 'True' == os.environ.get('REPORT_OBJECT_KEY', 'False')
+          print(f'report object key: {report_object_key}')
+
+          region = boto3.session.Session().region_name
+          s3_client_path = boto3.client('s3', region, config=Config(s3={'addressing_style': 'path'}, signature_version='s3v4'))
+          s3_client_virtual = boto3.client('s3', region, config=Config(s3={'addressing_style': 'virtual'}, signature_version='s3v4'))
+
+          def create_presigned_url(bucket_name, object_name, expiration):
+              """Generate a presigned URL to share an S3 object
+
+              :param bucket_name: string
+              :param object_name: string
+              :param expiration: Time in seconds for the presigned URL to remain valid
+              :return: Presigned URL as string. If error, returns None.
+              """
+
+              # Generate a presigned URL for the S3 object
+              try:
+                  s3_client = s3_client_path if '.' in bucket_name else s3_client_virtual
+                  response = s3_client.generate_presigned_url(
+                      'get_object',
+                      Params={
+                          'Bucket': bucket_name,
+                          'Key': object_name
+                      },
+                      ExpiresIn=expiration
+                  )
+              except ClientError as e:
+                  print('failed to generate pre-signed URL: ' + str(e))
+                  return None
+
+              # The response contains the presigned URL which is sensitive data
+              return response
+
+
+          def push_to_sqs(bucket_name, object_name, amz_request_id, presigned_url, event_time):
+              object = {
+                  'S3': {
+                      'bucket': bucket_name,
+                      'object': object_name,
+                      'amzRequestID': amz_request_id,
+                  },
+                  'ScanID': str(uuid.uuid4()),
+                  'SNS' : os.environ['SNSArn'],
+                  'URL': presigned_url,
+                  'ModTime': event_time,
+                  'ReportObjectKey': report_object_key
+              }
+              try:
+                  session = boto3.session.Session(region_name=sqs_region)
+                  sqs = session.resource(service_name='sqs', endpoint_url=sqs_endpoint_url)
+                  queue = sqs.Queue(url=sqs_url)
+                  response = queue.send_message(MessageBody=json.dumps(object))
+                  return response
+              except ClientError as e:
+                  print('failed to push SQS message: ' + str(e))
+                  return None
+
+          def is_folder(key):
+              return key.endswith('/')
+
+          def handle_step_functions_event(bucket, key):
+              key = urllib.parse.unquote_plus(key)
+              amz_request_id = "f"
+              event_time = datetime.datetime.utcnow().isoformat() # ISO-8601 format, 1970-01-01T00:00:00.000Z, when Amazon S3 finished processing the request
+
+              if is_folder(key):
+                  print('Skip scanning for folder.')
+                  return
+
+              presigned_url = create_presigned_url(
+                  bucket,
+                  key,
+                  expiration = 60 * 60 # in seconds
+              )
+              print(f'AMZ request ID: {amz_request_id}, event time: {event_time}, URL:', presigned_url.split('?')[0])
+              sqs_response = push_to_sqs(bucket, key, amz_request_id, presigned_url, event_time)
+              print(sqs_response)
+
+          def lambda_handler(event, context):
+
+              bucket = event['bucket']
+              key = event['key']
+              handle_step_functions_event(bucket, key)
+      Role:
+        Fn::GetAtt:
+          - ScanOneObjectExecutionRole
+          - Arn
+      Environment:
+        Variables:
+          SNSArn:
+            Ref: ScanResultTopicArn
+          SQSUrl:
+            Ref: ScannerQueueUrl
+      Handler: index.lambda_handler
+      MemorySize: 128
+      Runtime: python3.9
+      Timeout: 60
+    DependsOn:
+      - ScanOneObjectExecutionRoleDefaultPolicy
+      - ScanOneObjectExecutionRole
+  ScanStarterExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::Join:
+                  - ""
+                  - - states.
+                    - Ref: AWS::Region
+                    - .amazonaws.com
+        Version: "2012-10-17"
+  ScanStarterExecutionRoleDefaultPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: lambda:InvokeFunction
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - FilterFunction
+                  - Arn
+              - Fn::GetAtt:
+                  - ScanOneObjectFunction
+                  - Arn
+          - Action: states:StartExecution
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - ScannerLoopStepFunction
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: ScanStarterExecutionRoleDefaultPolicy
+      Roles:
+        - Ref: ScanStarterExecutionRole
+  ScannerLoopStepFunction:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - ScanStarterExecutionRole
+          - Arn
+      DefinitionString:
+        Fn::Join:
+          - ""
+          - - |-2
+
+                    {
+                      "Comment": "A machine that loops trough all files a bucket to scan them with File Storage Security.",
+                      "StartAt": "Filter first 1000 keys to scan",
+                      "States": {
+                        "Filter first 1000 keys to scan": {
+                          "Type": "Task",
+                          "Resource": "arn:aws:states:::lambda:invoke",
+                          "OutputPath": "$.Payload",
+                          "Parameters": {
+                            "Payload.$": "$",
+                            "FunctionName": "
+            - Fn::GetAtt:
+                - FilterFunction
+                - Arn
+            - |-
+              "
+                          },
+                          "Retry": [
+                            {
+                              "ErrorEquals": [
+                                "Lambda.ServiceException",
+                                "Lambda.AWSLambdaException",
+                                "Lambda.SdkClientException"
+                              ],
+                              "IntervalSeconds": 2,
+                              "MaxAttempts": 6,
+                              "BackoffRate": 2
+                            }
+                          ],
+                          "Next": "Parallel"
+                        },
+                        "Parallel": {
+                          "Type": "Parallel",
+                          "Branches": [
+                            {
+                              "StartAt": "Map",
+                              "States": {
+                                "Map": {
+                                  "Type": "Map",
+                                  "End": true,
+                                  "Parameters": {
+                                    "key.$": "$$.Map.Item.Value",
+                                    "bucket.$": "$.bucket"
+                                  },
+                                  "Iterator": {
+                                    "StartAt": "Scan a Object",
+                                    "States": {
+                                      "Scan a Object": {
+                                        "Type": "Task",
+                                        "Resource": "arn:aws:states:::lambda:invoke",
+                                        "OutputPath": "$.Payload",
+                                        "Parameters": {
+                                          "Payload.$": "$",
+                                          "FunctionName": "
+            - Fn::GetAtt:
+                - ScanOneObjectFunction
+                - Arn
+            - |-
+              "
+                                        },
+                                        "Retry": [
+                                          {
+                                            "ErrorEquals": [
+                                              "Lambda.ServiceException",
+                                              "Lambda.AWSLambdaException",
+                                              "Lambda.SdkClientException"
+                                            ],
+                                            "IntervalSeconds": 2,
+                                            "MaxAttempts": 6,
+                                            "BackoffRate": 2
+                                          }
+                                        ],
+                                        "End": true
+                                      }
+                                    }
+                                  },
+                                  "ItemsPath": "$.keys"
+                                }
+                              }
+                            },
+                            {
+                              "StartAt": "Are there keys left?",
+                              "States": {
+                                "Are there keys left?": {
+                                  "Type": "Choice",
+                                  "Choices": [
+                                    {
+                                      "Variable": "$.remainingKeysLength",
+                                      "NumericGreaterThan": 0,
+                                      "Comment": "Yes",
+                                      "Next": "Re-execute with the remaining keys."
+                                    }
+                                  ],
+                                  "Default": "Pass"
+                                },
+                                "Re-execute with the remaining keys.": {
+                                  "Type": "Task",
+                                  "Resource": "arn:aws:states:::states:startExecution",
+                                  "Parameters": {
+                                    "StateMachineArn": "arn:
+            - Ref: AWS::Partition
+            - ":states:"
+            - Ref: AWS::Region
+            - ":"
+            - Ref: AWS::AccountId
+            - ":stateMachine:ScannerLoopStateMachine\",
+
+              \                      \"Input\": {
+
+              \                        \"stateBucket.$\": \"$.stateBucket\",
+
+              \                        \"stateKey.$\": \"$.stateKey\",
+
+              \                        \"limit.$\": \"$.limit\",
+
+              \                        \"bucket.$\": \"$.bucket\",
+
+              \                        \"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\": \"$$.Execution.Id\"
+
+              \                      }
+
+              \                    },
+
+              \                    \"End\": true
+
+              \                  },
+
+              \                  \"Pass\": {
+
+              \                    \"Type\": \"Pass\",
+
+              \                    \"End\": true,
+
+              \                    \"Result\": {}
+
+              \                  }
+
+              \                }
+
+              \              }
+
+              \            ],
+
+              \            \"End\": true
+
+              \          }
+
+              \        }
+
+              \      }
+
+              \      "
+      StateMachineName: ScannerLoopStateMachine
+  FullScanStarterExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                Fn::Join:
+                  - ""
+                  - - states.
+                    - Ref: AWS::Region
+                    - .amazonaws.com
+        Version: "2012-10-17"
+  FullScanStarterExecutionRoleDefaultPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: lambda:InvokeFunction
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - PaginatorFunction
+                - Arn
+          - Action: states:StartExecution
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - ScannerLoopStepFunction
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: FullScanStarterExecutionRoleDefaultPolicy
+      Roles:
+        - Ref: FullScanStarterExecutionRole
+  FullScanStarterLoopStepFunction:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - FullScanStarterExecutionRole
+          - Arn
+      DefinitionString:
+        Fn::Join:
+          - ""
+          - - |-2
+
+                    {
+                      "Comment": "Kicks of a Full Scan using File Storage Security.",
+                      "StartAt": "List all keys in bucket",
+                      "States": {
+                        "List all keys in bucket": {
+                          "Type": "Task",
+                          "Resource": "arn:aws:states:::lambda:invoke",
+                          "OutputPath": "$.Payload",
+                          "Parameters": {
+                            "FunctionName": "
+            - Fn::GetAtt:
+                - PaginatorFunction
+                - Arn
+            - |-
+              ",
+                            "Payload": {
+                              "bucket": "
+            - Ref: BucketName
+            - |-
+              "
+                            }
+                          },
+                          "Retry": [
+                            {
+                              "ErrorEquals": [
+                                "Lambda.ServiceException",
+                                "Lambda.AWSLambdaException",
+                                "Lambda.SdkClientException"
+                              ],
+                              "IntervalSeconds": 2,
+                              "MaxAttempts": 6,
+                              "BackoffRate": 2
+                            }
+                          ],
+                          "Next": "Start Scanner Flow"
+                        },
+                        "Start Scanner Flow": {
+                          "Type": "Task",
+                          "Resource": "arn:aws:states:::states:startExecution",
+                          "Parameters": {
+                            "StateMachineArn": "
+            - Fn::GetAtt:
+                - ScannerLoopStepFunction
+                - Arn
+            - "\",
+
+              \              \"Input\": {
+
+              \                \"stateKey.$\": \"$.stateKey\",
+
+              \                \"bucket.$\": \"$.bucket\",
+
+              \                \"stateBucket.$\": \"$.stateBucket\",
+
+              \                \"limit.$\": \"$.limit\",
+
+              \                \"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\": \"$$.Execution.Id\"
+
+              \              }
+
+              \            },
+
+              \            \"End\": true
+
+              \          }
+
+              \        }
+
+              \      }
+
+              \      "
+      StateMachineName: fullScanStarterStateMachine
+    DependsOn:
+      - FullScanStarterExecutionRoleDefaultPolicy
+      - FullScanStarterExecutionRole
+  FullScanStarterLoopStepFunctionEventsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+        Version: "2012-10-17"
+  FullScanStarterLoopStepFunctionEventsRoleDefaultPolicy822C2937:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: states:StartExecution
+            Effect: Allow
+            Resource:
+              Ref: FullScanStarterLoopStepFunction
+        Version: "2012-10-17"
+      PolicyName: FullScanStarterLoopStepFunctionEventsRoleDefaultPolicy822C2937
+      Roles:
+        - Ref: FullScanStarterLoopStepFunctionEventsRole
+  ScanOnSchedule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression:
+        Ref: Schedule
+      State: ENABLED
+      Targets:
+        - Arn:
+            Ref: FullScanStarterLoopStepFunction
+          Id: Target0
+          RoleArn:
+            Fn::GetAtt:
+              - FullScanStarterLoopStepFunctionEventsRole
+              - Arn
+    Condition: SetSchedule
+Outputs:
+  FullScanFunctionPage:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: AWS::Region
+          - .console.aws.amazon.com/states/home?region=
+          - Ref: AWS::Region
+          - "#/statemachines/view/arn:"
+          - Ref: AWS::Partition
+          - ":states:"
+          - Ref: AWS::Region
+          - ":"
+          - Ref: AWS::AccountId
+          - :stateMachine:fullScanStarterStateMachine

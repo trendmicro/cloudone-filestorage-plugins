@@ -10,10 +10,14 @@
     "boto",
     "botocore",
     "eicar",
+    "gcloud",
     "pqfunction",
     "Spdx",
     "strftime",
-    "urlunsplit"
+    "tfvars",
+    "urlunsplit",
+    "vnet",
+    "ampls"
   ],
   "ignoreWords": [
     "fileb"

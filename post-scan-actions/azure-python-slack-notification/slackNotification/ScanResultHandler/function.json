@@ -1,0 +1,14 @@
+{
+  "scriptFile": "handler.py",
+  "entryPoint": "main",
+  "bindings": [
+    {
+      "name": "message",
+      "type": "serviceBusTrigger",
+      "direction": "in",
+      "topicName": "scan-result-topic",
+      "subscriptionName": "%SCAN_RESULT_TOPIC_SUBSCRIPTION%",
+      "connection": "BUS_TOPIC_CONNECTION_STRING"
+    }
+  ]
+}

@@ -89,7 +89,7 @@ Parameters:
     Type: String
     Default: ''
     Description: |
-      [Optional] The ARN of the IAM permission boundary. Leave it blank to disable using a permission boundary.
+      [Optional] The ARN of the policy used to set the permissions boundary for all the roles that will be created. Leave it blank to disable using a permissions boundary.
 
 Conditions:
   PromoteEnabled:
@@ -105,7 +105,7 @@ Conditions:
   VpcEnabled: !Not [!Or [!Equals [!Ref VpcSubnetId, ''], !Equals [!Ref VpcSecurityGroupId, '']]]
 
 Resources:
-  LambdaExecutionRole:
+  PromoteOrQuarantineLambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:

@@ -8,7 +8,7 @@ After a scan occurs, this example Lambda function sends out a notification Email
     - Install the AWS command line interface (CLI). See [Installing the AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) for details.
     - Install GNU Make if you don't want to use the AWS CLI. See [GNU Make](https://www.gnu.org/software/make/) for download information.
 2. **Configure Amazon Simple Email Servie**
-    - Verify the Email addresses you are going to use for sending the Email notifications as well as the recipient's Email address.
+    - Verify the Email addresses you are going to use for sending the Email notifications as well as the recipient's Email address. See [Verifying email addresses in Amazon SES](https://docs.aws.amazon.com/ses/latest/DeveloperGuide/verify-email-addresses.html).
 3. **Create a custom policy**
 
     <details>
@@ -24,7 +24,6 @@ After a scan occurs, this example Lambda function sends out a notification Email
         - In the **Name** field, enter a name. Example: `FSS_SES_Send_Email_Policy`.
         - Click **Create policy**.
     8. Click the link to your policy to open its summary.
-    9. Take note of the **Policy ARN** near the top of the page.
     </details>
 
     <details>
@@ -218,14 +217,22 @@ After a scan occurs, this example Lambda function sends out a notification Email
 
 <details>
 <summary>Using the AWS console</summary>
+    
+1. **Find the 'ScanResultTopic' SNS topic ARN**
 
-1. Go to **Services > Lambda**.
-2. Search for the Lambda function you created previously. Example: `FSS_Scan_Send_Email`
-3. Click the link to your Lambda function to view its details.
-4. Click **Add trigger** on the left.
-5. From the **Trigger configuration** list, select **SNS**.
-6. In the **SNS topic** field, enter the SNS topic ARN you found earlier.
-7. Click **Add**. Your Lambda is now subscribed to the SNS topic.
+    - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources**.
+    - Scroll down to locate the  **ScanResultTopic** Logical ID. 
+    - Take note of the **ScanResultTopic** ARN. Example: `arn:aws:sns:us-east-1:123445678901:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
+
+2. **Set the Lambda function trigger**
+
+    - Go to **Services > Lambda**.
+    - Search for the Lambda function you created previously. Example: `FSS_Scan_Send_Email`
+    - Click the link to your Lambda function to view its details.
+    - Click **Add trigger** on the left.
+    - From the **Trigger configuration** list, select **SNS**.
+    - In the **SNS topic** field, enter the SNS topic ARN you found earlier.
+    - Click **Add**. Your Lambda is now subscribed to the SNS topic.
 
 </details>
 
@@ -236,6 +243,7 @@ After a scan occurs, this example Lambda function sends out a notification Email
     - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources**.
     - Scroll down to locate the  **ScanResultTopic** Logical ID. 
     - Copy the **ScanResultTopic** ARN to a temporary location. Example: `arn:aws:sns:us-east-1:123445678901:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
+
 2. **Find the Lambda function ARN**
     
     📌 The Lamdba function ARN is required only if you plan to use the AWS CLI (as opposed to the console) to subscribe the Lambda to the SNS topic.

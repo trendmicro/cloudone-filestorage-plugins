@@ -1,60 +1,40 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 3.27"
-    }
-  }
-
-  required_version = ">= 0.14.9"
-}
-
-variable "AWSRegion" {
-  type = string
-  default = ""
-}
-
-provider "aws" {
-  profile = "default"
-  region  = var.AWSRegion
-}
-
-variable "S3BucketToScan" {
-  type = string
-  default = ""
-}
-
-variable "ExternalID" {
-  type = string
-  default = ""
-}
-
-variable "ScannerAWSAccount" {
-  type = string
-  default = ""
-}
-
-variable "ScannerSQSURL" {
-  type = string
-  default = ""
-}
-
 resource "aws_cloudformation_stack" "fss-storage-by-tf" {
   name = "fss-storage-stack-by-tf"
   capabilities = ["CAPABILITY_IAM"]
 
   parameters = {
     S3BucketToScan = var.S3BucketToScan,
-    ScannerAWSAccount = var.ScannerAWSAccount,
-    ScannerSQSURL = var.ScannerSQSURL,
     ExternalID = var.ExternalID
+    CloudOneRegion = var.CloudOneRegion
+    AdditionalIAMPolicies = var.AdditionalIAMPolicies
+    BucketListenerDLQARN = var.BucketListenerDLQARN
+    FSSBucketName = var.FSSBucketName
+    FSSKeyPrefix = var.FSSKeyPrefix
+    IAMPolicyPrefix = var.IAMPolicyPrefix
+    IAMRolePrefix = var.IAMRolePrefix
+    KMSKeyARNForBucketSSE = var.KMSKeyARNForBucketSSE
+    KMSKeyARNForDLQSSE = var.KMSKeyARNForDLQSSE
+    KMSKeyARNForQueueSSE = var.KMSKeyARNForQueueSSE
+    KMSKeyARNForTopicSSE = var.KMSKeyARNForTopicSSE
+    LambdaFunctionPrefix = var.LambdaFunctionPrefix
+    NetworkProxy = var.NetworkProxy
+    ObjectFilterPrefix = var.ObjectFilterPrefix
+    PermissionsBoundary = var.PermissionsBoundary
+    PostScanActionTagDLQARN = var.PostScanActionTagDLQARN
+    ReportObjectKey = var.ReportObjectKey
+    ScannerAWSAccount = var.ScannerAWSAccount
+    ScannerLambdaAliasARN = var.ScannerLambdaAliasARN
+    ScannerSQSURL = var.ScannerSQSURL
+    ScanOnGetObject = var.ScanOnGetObject
+    ScanResultTopicDLQARN = var.ScanResultTopicDLQARN
+    SecurityGroupIDs = var.SecurityGroupIDs
+    SNSTopicPrefix = var.SNSTopicPrefix
+    SubnetIDs = var.SubnetIDs
+    TrendMicroManagementAccount = var.TrendMicroManagementAccount
+    TriggerWithObjectCreatedEvent = var.TriggerWithObjectCreatedEvent
+
   }
 
   template_url="https://file-storage-security.s3.amazonaws.com/latest/templates/FSS-Storage-Stack.template"
 
-}
-
-output "CFT_STORAGE_OUTPUTS" {
-  description = "Outputs from CFT"
-  value       = aws_cloudformation_stack.fss-storage-by-tf.outputs
 }

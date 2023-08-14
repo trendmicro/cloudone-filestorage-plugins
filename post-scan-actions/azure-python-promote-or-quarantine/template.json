@@ -9,6 +9,20 @@
                 "description": "The name of the promote or quarantine function to create."
             }
         },
+        "functionsPackageLocation": {
+            "type": "string",
+            "defaultValue": "https://github.com/trendmicro/cloudone-filestorage-plugins/releases/download/azure-python-promote-or-quarantine-1.0.0",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
+        "sharedAccessSignature": {
+            "type": "secureString",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
+            }
+        },
         "scanningStorageAccountResourceID": {
             "type": "String",
             "metadata": {
@@ -56,21 +70,71 @@
             "metadata": {
                 "description": "The method by which files were quarantined.<br/>(Options: move, copy)."
             }
+        },
+        "VNETResourceID": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "<b>[VNet Only]</b><br />This field requires the resource ID of the existing virtual network (VNet) that the deployed resource will be associated with. If you wish to deploy the plugin into a VNet, please see <a href='https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/azure-python-promote-or-quarantine#deploy-function-app-with-vnet-integration'>Deploy Function App with VNet Integration</a> for detailed instructions and ensure that the required resources have been created.<br /> If a VNet is not required, please leave this field blank."
+            }
+        },
+        "VNETPromoteOrQuarantineSubnetName": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "<b>[VNet Only]</b><br />The name of the subnet used by the promote or quarantine function app."
+            }
+        },
+        "VNETPrivateEndpointsSubnetName": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "<b>[VNet Only]</b><br />Provide the name of the subnet used to create private endpoints for other resources such as Service Bus and Storage Account."
+            }
+        },
+        "VNETFilePrivateDNSZoneResourceID": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "<b>[VNet Only]</b><br />To connect to stack resources via private endpoints, use the Private DNS zone resource ID for the storage account file.<br/>For example:<br/><b>/subscriptions/1234abcd-3c6d-4347-9019-123456789012/resourceGroups/resource-group-name/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net</b><br/>Please confirm the Private DNS zone name is correct and refer to <a href='https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns'>Azure Private Endpoint DNS configuration</a>.<br/> If a VNet is not required, please leave this field blank."
+            }
+        },
+        "VNETBlobPrivateDNSZoneResourceID": {
+            "defaultValue": "",
+            "type": "String",
+            "metadata": {
+                "description": "<b>[VNet Only]</b><br />To connect to stack resources via private endpoints, use the Private DNS zone resource ID for the storage account blob.<br/>For example:<br/><b>/subscriptions/1234abcd-3c6d-4347-9019-123456789012/resourceGroups/resource-group-name/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net</b><br/>Please confirm the Private DNS zone name is correct and refer to <a href='https://learn.microsoft.com/en-us/azure/private-link/private-endpoint-dns'>Azure Private Endpoint DNS configuration</a>.<br/> If a VNet is not required, please leave this field blank."
+            }
+        },
+        "VNETRestrictedAccessForApplicationInsights": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": {
+                "description": "<b>[VNet Only]</b><br />Indicates whether to restrict public access to Application Insights. If set to true, it means that Application Insights can only be accessed through Azure Monitor Private Link Scope. If you don't add the Application Insight to the Azure Monitor Private Link Scope, you won't be able to ingest or query data. For more information on how to configure Private Link for Application Insights, please see <a href='https://cloudone.trendmicro.com/docs/file-storage-security/azure-vnet-deployment/'>Restrict access to Application Insights'</a>. If VNet is not required, please choose false."
+            }
         }
     },
     "variables": {
         "location": "[resourceGroup().location]",
+        "unifiedSAS": "[if(empty(parameters('sharedAccessSignature')), '', if(startsWith(parameters('sharedAccessSignature'), '?'), parameters('sharedAccessSignature'), concat('?', parameters('sharedAccessSignature'))))]",
+        "functionPackageLink": "[concat(parameters('functionsPackageLocation') ,'/promoteOrQuarantineFunction.zip', variables('unifiedSAS'))]",
+        "functionContentShareName": "function-content-share",
         "functionAppName": "[parameters('promoteOrQuarantineFunctionName')]",
         "hostingPlanName": "[parameters('promoteOrQuarantineFunctionName')]",
         "applicationInsightsName": "[parameters('promoteOrQuarantineFunctionName')]",
         "storageAccountName": "[concat('pqfunction', uniquestring(resourceGroup().id))]",
+        "storageAccountFileNICName": "[concat('pqfunctionsani0', uniquestring(resourceGroup().id))]",
+        "storageAccountBlobNICName": "[concat('pqfunctionsani1', uniquestring(resourceGroup().id))]",
+        "storageAccountFilePEName": "[concat('pqfunctionsape0', uniquestring(resourceGroup().id))]",
+        "storageAccountBlobPEName": "[concat('pqfunctionsape1', uniquestring(resourceGroup().id))]",
+        "storageAccountFileShareName": "[format('{0}/default/{1}', variables('storageAccountName'), variables('functionContentShareName'))]",
         "scanningStorageAccountResourceIDSplits": "[split(parameters('scanningStorageAccountResourceID'), '/')]",
         "scanningStorageSubscriptionID": "[variables('scanningStorageAccountResourceIDSplits')[2]]",
         "scanningStorageResourceGroupName": "[variables('scanningStorageAccountResourceIDSplits')[4]]",
         "scanningStorageAccountName": "[variables('scanningStorageAccountResourceIDSplits')[8]]",
-        "scanningStoragePromteQuarantineRoleAssignmentUID": "[guid(resourceGroup().id, variables('scanningStorageAccountName'))]",
-        "scanningStoragePromteQuarantineRoleName": "[guid('FSS-ScanningStoragePromteQuarantineRole', parameters('promoteOrQuarantineFunctionName'))]",
-        "scanningStoragePromteQuarantineRoleDefinitionName": "[concat('FSS-ScanningStoragePromteQuarantineRole-', parameters('promoteOrQuarantineFunctionName'))]",
+        "scanningStoragePromoteQuarantineRoleAssignmentUID": "[guid(resourceGroup().id, variables('scanningStorageAccountName'))]",
+        "scanningStoragePromoteQuarantineRoleName": "[guid('FSS-ScanningStoragePromteQuarantineRole', parameters('promoteOrQuarantineFunctionName'))]",
+        "scanningStoragePromoteQuarantineRoleDefinitionName": "[concat('FSS-ScanningStoragePromteQuarantineRole-', parameters('promoteOrQuarantineFunctionName'))]",
         "scanResultTopicResourceIDSplits": "[split(parameters('scanResultTopicResourceID'), '/')]",
         "scanResultTopicResourceSubscriptionID": "[variables('scanResultTopicResourceIDSplits')[2]]",
         "scanResultTopicResourceGroupName": "[variables('scanResultTopicResourceIDSplits')[4]]",
@@ -83,18 +147,146 @@
         "scanResultTopicAPIVersion": "2017-04-01",
         "functionAppAPIVersion": "2020-12-01",
         "scanningStoragePromoteQuarantineRoleAssignmentDeployment": "scanningStoragePromoteQuarantineRoleAssignment",
-        "scanResultSubscriptionDeployment": "scanResultSubscription"
+        "scanResultSubscriptionDeployment": "scanResultSubscription",
+        "withVNet": "[not(empty(parameters('VNETResourceID')))]",
+        "privateEndpointSubnetID": "[concat(parameters('VNETResourceID'), '/subnets/', parameters('VNETPrivateEndpointsSubnetName'))]",
+        "functionAppSKUMap": {
+            "Y1": {
+                "name": "Y1",
+                "tier": "Dynamic",
+                "size": "Y1",
+                "family": "Y",
+                "capacity": 1
+            },
+            "EP1": {
+                "name": "EP1",
+                "tier": "ElasticPremium",
+                "size": "EP1",
+                "family": "EP"
+            }
+        },
+        "functionAppSKU": "[variables('functionAppSkuMap')[if(variables('withVNet'), 'EP1', 'Y1')]]",
+        "storageAccountType": "[if(variables('withVNet'), 'StorageV2', 'Storage')]",
+        "publicNetworkAccess": "[if(variables('withVNet'), 'Disabled', 'Enabled')]",
+        "filePrivateZoneGroupName": "filePrivateDnsZoneGroup",
+        "blobPrivateZoneGroupName": "blobPrivateDnsZoneGroup",
+        "appInsightPublicAccess": "[if(parameters('VNETRestrictedAccessForApplicationInsights'), 'Disabled', 'Enabled')]"
     },
     "resources": [
         {
             "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2019-06-01",
+            "apiVersion": "2022-09-01",
             "name": "[variables('storageAccountName')]",
             "location": "[variables('location')]",
             "sku": {
                 "name": "Standard_LRS"
             },
-            "kind": "Storage"
+            "kind": "[variables('storageAccountType')]",
+            "properties": {
+                "minimumTlsVersion": "TLS1_2",
+                "publicNetworkAccess": "[variables('publicNetworkAccess')]"
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+            "apiVersion": "2022-05-01",
+            "name": "[variables('storageAccountFileShareName')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ],
+            "condition": "[variables('withVNet')]"
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2022-07-01",
+            "name": "[variables('storageAccountFilePEName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ],
+            "properties": {
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "[variables('storageAccountFilePEName')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                            "groupIds": [
+                                "file"
+                            ]
+                        }
+                    }
+                ],
+                "customNetworkInterfaceName": "[variables('storageAccountFileNICName')]",
+                "subnet": {
+                    "id": "[variables('privateEndpointSubnetID')]"
+                }
+            },
+            "condition": "[variables('withVNet')]"
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2022-07-01",
+            "name": "[concat(variables('storageAccountFilePEName'), '/', variables('filePrivateZoneGroupName'))]",
+            "dependsOn": [
+                "[variables('storageAccountFilePEName')]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name": "[variables('filePrivateZoneGroupName')]",
+                        "properties": {
+                            "privateDnsZoneId": "[parameters('VNETFilePrivateDNSZoneResourceID')]"
+                        }
+                    }
+                ]
+            },
+            "condition": "[and(not(empty(parameters('VNETFilePrivateDNSZoneResourceID'))), variables('withVNet'))]"
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints",
+            "apiVersion": "2022-07-01",
+            "name": "[variables('storageAccountBlobPEName')]",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+            ],
+            "properties": {
+                "privateLinkServiceConnections": [
+                    {
+                        "name": "[variables('storageAccountBlobPEName')]",
+                        "properties": {
+                            "privateLinkServiceId": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                            "groupIds": [
+                                "blob"
+                            ]
+                        }
+                    }
+                ],
+                "customNetworkInterfaceName": "[variables('storageAccountBlobNICName')]",
+                "subnet": {
+                    "id": "[variables('privateEndpointSubnetID')]"
+                }
+            },
+            "condition": "[variables('withVNet')]"
+        },
+        {
+            "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+            "apiVersion": "2022-07-01",
+            "name": "[concat(variables('storageAccountBlobPEName'), '/', variables('blobPrivateZoneGroupName'))]",
+            "dependsOn": [
+                "[variables('storageAccountBlobPEName')]"
+            ],
+            "properties": {
+                "privateDnsZoneConfigs": [
+                    {
+                        "name": "[variables('blobPrivateZoneGroupName')]",
+                        "properties": {
+                            "privateDnsZoneId": "[parameters('VNETBlobPrivateDNSZoneResourceID')]"
+                        }
+                    }
+                ]
+            },
+            "condition": "[and(not(empty(parameters('VNETBlobPrivateDNSZoneResourceID'))), variables('withVNet'))]"
         },
         {
             "type": "Microsoft.Web/serverfarms",
@@ -102,13 +294,7 @@
             "name": "[variables('hostingPlanName')]",
             "location": "[variables('location')]",
             "kind": "linux",
-            "sku": {
-                "name": "Y1",
-                "tier": "Dynamic",
-                "size": "Y1",
-                "family": "Y",
-                "capacity": 1
-            },
+            "sku": "[variables('functionAppSKU')]",
             "properties": {
                 "reserved": true
             }
@@ -124,13 +310,17 @@
             },
             "dependsOn": [
                 "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
-                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', split(variables('storageAccountFileShareName'), '/')[0], split(variables('storageAccountFileShareName'), '/')[1], split(variables('storageAccountFileShareName'), '/')[2])]"
             ],
             "properties": {
                 "enabled": true,
                 "reserved": true,
                 "isXenon": false,
                 "hyperV": false,
+                "publicNetworkAccess": "[variables('publicNetworkAccess')]",
+                "virtualNetworkSubnetId": "[if(variables('withVNet'), concat(parameters('VNETResourceID'), '/subnets/', parameters('VNETPromoteOrQuarantineSubnetName')), json('null'))]",
+                "vnetRouteAllEnabled": "[variables('withVNet')]",
                 "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
                 "siteConfig": {
                     "use32BitWorkerProcess": false,
@@ -146,11 +336,19 @@
                         },
                         {
                             "name": "WEBSITE_CONTENTSHARE",
-                            "value": "[toLower(variables('functionAppName'))]"
+                            "value": "[if(variables('withVNet'), variables('functionContentShareName'), toLower(variables('functionAppName')))]"
+                        },
+                        {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "[variables('functionPackageLink')]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTOVERVNET",
+                            "value": "[if(variables('withVNet'), '1', '0')]"
                         },
                         {
                             "name": "FUNCTIONS_EXTENSION_VERSION",
-                            "value": "~3"
+                            "value": "~4"
                         },
                         {
                             "name": "WEBSITE_NODE_DEFAULT_VERSION",
@@ -206,7 +404,7 @@
         },
         {
             "type": "microsoft.insights/components",
-            "apiVersion": "2020-02-02-preview",
+            "apiVersion": "2020-02-02",
             "name": "[variables('applicationInsightsName')]",
             "location": "[variables('location')]",
             "kind": "web",
@@ -215,7 +413,8 @@
             },
             "properties": {
                 "Application_Type": "web",
-                "ApplicationId": "[variables('applicationInsightsName')]"
+                "publicNetworkAccessForIngestion": "[variables('appInsightPublicAccess')]",
+                "publicNetworkAccessForQuery": "[variables('appInsightPublicAccess')]"
             }
         },
         {
@@ -270,9 +469,9 @@
                         {
                             "type": "Microsoft.Authorization/roleDefinitions",
                             "apiVersion": "2018-07-01",
-                            "name": "[variables('scanningStoragePromteQuarantineRoleName')]",
+                            "name": "[variables('scanningStoragePromoteQuarantineRoleName')]",
                             "properties": {
-                                "roleName": "[variables('scanningStoragePromteQuarantineRoleDefinitionName')]",
+                                "roleName": "[variables('scanningStoragePromoteQuarantineRoleDefinitionName')]",
                                 "description": "The role for FSS promote or quarantine plugin to read blobs, delete blobs, and generate SAS for blobs.",
                                 "type": "customRole",
                                 "isCustom": true,
@@ -296,26 +495,26 @@
                         {
                             "type": "Microsoft.Authorization/roleAssignments",
                             "apiVersion": "2018-09-01-preview",
-                            "name": "[variables('scanningStoragePromteQuarantineRoleAssignmentUID')]",
+                            "name": "[variables('scanningStoragePromoteQuarantineRoleAssignmentUID')]",
                             "scope": "[concat('Microsoft.Storage/storageAccounts/', variables('scanningStorageAccountName'))]",
                             "dependsOn": [
-                                "[variables('scanningStoragePromteQuarantineRoleName')]"
+                                "[variables('scanningStoragePromoteQuarantineRoleName')]"
                             ],
                             "properties": {
-                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('scanningStoragePromteQuarantineRoleName'))]",
+                                "roleDefinitionId": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('scanningStoragePromoteQuarantineRoleName'))]",
                                 "principalId": "[reference(resourceId('Microsoft.Web/sites', variables('functionAppName')), variables('functionAppAPIVersion'), 'full').identity.principalId]",
                                 "principalType": "ServicePrincipal"
                             }
                         }
                     ],
                     "outputs": {
-                        "scanningStoragePromteQuarantineRoleAssignmentResourceID": {
+                        "scanningStoragePromoteQuarantineRoleAssignmentResourceID": {
                             "type": "string",
-                            "value": "[resourceId('Microsoft.Authorization/roleAssignments', variables('scanningStoragePromteQuarantineRoleAssignmentUID'))]"
+                            "value": "[resourceId('Microsoft.Authorization/roleAssignments', variables('scanningStoragePromoteQuarantineRoleAssignmentUID'))]"
                         },
-                        "scanningStoragePromteQuarantineRoleResourceID": {
+                        "scanningStoragePromoteQuarantineRoleResourceID": {
                             "type": "string",
-                            "value": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('scanningStoragePromteQuarantineRoleName'))]"
+                            "value": "[resourceId('Microsoft.Authorization/roleDefinitions', variables('scanningStoragePromoteQuarantineRoleName'))]"
                         }
                     }
                 },
@@ -332,13 +531,17 @@
             "type": "string",
             "value": "[reference(variables('scanResultSubscriptionDeployment')).outputs.scanResultTopicSubscriptionResourceID.value]"
         },
-        "createdScanningStoragePromteQuarantineRoleAssignmentResourceID": {
+        "createdScanningStoragePromoteQuarantineRoleAssignmentResourceID": {
             "type": "string",
-            "value": "[reference(variables('scanningStoragePromoteQuarantineRoleAssignmentDeployment')).outputs.scanningStoragePromteQuarantineRoleAssignmentResourceID.value]"
+            "value": "[reference(variables('scanningStoragePromoteQuarantineRoleAssignmentDeployment')).outputs.scanningStoragePromoteQuarantineRoleAssignmentResourceID.value]"
         },
-        "createdScanningStoragePromteQuarantineRoleResourceID": {
+        "createdScanningStoragePromoteQuarantineRoleResourceID": {
             "type": "string",
-            "value": "[reference(variables('scanningStoragePromoteQuarantineRoleAssignmentDeployment')).outputs.scanningStoragePromteQuarantineRoleResourceID.value]"
+            "value": "[reference(variables('scanningStoragePromoteQuarantineRoleAssignmentDeployment')).outputs.scanningStoragePromoteQuarantineRoleResourceID.value]"
+        },
+        "applicationInsightResourceID": {
+            "type": "string",
+            "value": "[resourceId('Microsoft.Insights/components', variables('applicationInsightsName'))]"
         }
     }
 }

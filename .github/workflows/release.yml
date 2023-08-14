@@ -1,0 +1,114 @@
+name: Release on Merge to Master
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+env:
+  PLUGIN_FUNCTIONS_MAP: |
+    {
+      "azure-python-promote-or-quarantine": "[\"promoteOrQuarantineFunction\"]",
+      "azure-python-slack-notification": "[\"slackNotification\"]",
+      "azure-python-teams-notification": "[\"teamsNotification\"]"
+    }
+
+jobs:
+  declare-variables:
+    runs-on: ubuntu-latest
+    outputs:
+      plugin_dir: ${{ steps.path_url.outputs.plugin_dir }}
+
+    steps:
+      - name: Declare Path URL
+        id: path_url
+        run: |
+          plugin_dir=${{ github.workspace }}/post-scan-actions
+          echo "plugin_dir=$plugin_dir" >> $GITHUB_OUTPUT
+
+  extract-changed-azure-plugins:
+    runs-on: ubuntu-latest
+    outputs:
+      changed_plugins: ${{ steps.extract_changes.outputs.changed_plugins }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed_files
+        uses: tj-actions/changed-files@v36
+        with:
+          json: true
+          files: |
+            post-scan-actions/az**/version.json
+
+      - name: List all changed files
+        run: |
+          echo ${{ steps.changed_files.outputs.all_changed_files }}
+
+      - name: Extract Changed Plugin
+        id: extract_changes
+        run: |
+          changed_plugins=$(echo "${{ steps.changed_files.outputs.all_changed_files }}" | jq '.[] | split("/") | .[-2]' | jq -sc)
+          echo "changed_plugins: $changed_plugins"
+          echo "changed_plugins=$changed_plugins" >> $GITHUB_OUTPUT
+
+  release-artifacts:
+    runs-on: ubuntu-latest
+    needs:
+      - extract-changed-azure-plugins
+      - declare-variables
+    if: ${{ needs.extract-changed-azure-plugins.outputs.changed_plugins != '[]' }}
+    strategy:
+      matrix:
+        plugin: ${{ fromJSON(needs.extract-changed-azure-plugins.outputs.changed_plugins) }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Echo Plugin Name
+        run: |
+          echo ${{ matrix.plugin }}
+          echo ${{ needs.declare-variables.outputs.plugin_dir }}
+
+      - name: Declare Variables
+        id: variables
+        run: |
+          version=$(jq -r '.version' ${{ needs.declare-variables.outputs.plugin_dir }}/${{ matrix.plugin }}/version.json)
+          echo "version: $version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+          functions=$(echo '${{ env.PLUGIN_FUNCTIONS_MAP }}' | jq -r '.["${{ matrix.plugin }}"]')
+          echo "functions: $functions"
+          echo "functions=$functions" >> $GITHUB_OUTPUT
+
+          plugin_path=${{ needs.declare-variables.outputs.plugin_dir }}/${{ matrix.plugin }}
+          echo "plugin_path: $plugin_path"
+          echo "plugin_path=$plugin_path" >> $GITHUB_OUTPUT
+
+      - name: Packaging Azure Function
+        uses: ./.github/actions/packaging_python_azure_functions
+        with:
+          artifacts_dir: ${{ steps.variables.outputs.plugin_path }}/zip
+          functions: ${{ steps.variables.outputs.functions }}
+          plugin_path: ${{ steps.variables.outputs.plugin_path }}
+
+      - name: Upload Release Asset
+        id: upload_asset
+        uses: svenstaro/upload-release-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ matrix.plugin }}-${{ steps.variables.outputs.version }}
+          release_name: ${{ matrix.plugin }} - ${{ steps.variables.outputs.version }}
+          file_glob: true
+          overwrite: true
+          file: ${{ steps.variables.outputs.plugin_path }}/zip/*
