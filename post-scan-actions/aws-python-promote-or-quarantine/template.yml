@@ -65,11 +65,11 @@ Parameters:
     Description: |
       [Optional] The security group ID of the VPC where the S3 bucket is located.
       Leave it blank to disable using a VPC.
-  KMSKeyARN:
+  KMSKeyARNs:
     Type: CommaDelimitedList
     Default: ''
     Description: |
-      [Optional] The ARN of the AWS KMS key used for Encryption.
+      [Optional] The list of AWS KMS keys' ARNs used for encryption to the scanning, quarantine and promote buckets.
   ACL:
     Type: String
     AllowedValues:
@@ -99,7 +99,7 @@ Conditions:
   PutACL:
     !Not [!Equals [!Ref ACL, '']]
   IsBucketSSEKMSEnabled:
-    !Not [!Equals [!Ref KMSKeyARN, '']]
+    !Not [!Equals [!Ref KMSKeyARNs, '']]
   HasPermissionsBoundary:
     !Not [!Equals [!Ref PermissionsBoundary, '']]
   VpcEnabled: !Not [!Or [!Equals [!Ref VpcSubnetId, ''], !Equals [!Ref VpcSecurityGroupId, '']]]
@@ -161,7 +161,7 @@ Resources:
                   Action:
                     - kms:Decrypt
                     - kms:GenerateDataKey
-                  Resource: !Ref KMSKeyARN
+                  Resource: !Ref KMSKeyARNs
                 - !Ref AWS::NoValue
   PromoteOrQuarantineLambda:
     Type: AWS::Serverless::Function
@@ -187,7 +187,7 @@ Resources:
           PROMOTEMODE: !Ref PromoteMode
           QUARANTINEBUCKET: !Ref QuarantineBucketName
           QUARANTINEMODE: !Ref QuarantineMode
-          KMSKEYARN: !Ref KMSKeyARN
+          KMSKEYARN: !Ref KMSKeyARNs
           ACL: !Ref ACL
       PermissionsBoundary: !If
         - HasPermissionsBoundary
