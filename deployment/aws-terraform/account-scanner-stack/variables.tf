@@ -72,7 +72,7 @@ variable "FSSKeyPrefix" {
 
 variable "TrendMicroManagementAccount" {
   type = string
-  default = 415485722356
+  default = "415485722356"
   description = "This account will be given permission to modify the stacks for upgrades and troubleshooting purposes."
 }
 
