@@ -171,8 +171,8 @@ variable "SubnetIDs" {
 }
 
 variable "TrendMicroManagementAccount" {
-  type = number
-  default = 415485722356
+  type = string
+  default = "415485722356"
   description = "This account will be given permission to modify the stacks for upgrades and troubleshooting purposes."
 }
 
