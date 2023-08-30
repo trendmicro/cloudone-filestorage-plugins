@@ -42,9 +42,10 @@ CODE_MESSAGES = {
     CODE_MISC: 'incomplete scan due to miscellaneous reason. Provide the fss-scan-detail-code tag value to Trend Micro support',
 }
 
+SLEEP_INTERVAL = 10
+
 def main(message: func.ServiceBusMessage):
     # Log the Service Bus Message as plaintext
-
     message_body = message.get_body().decode("utf-8")
     message = json.loads(message_body)
 
@@ -124,15 +125,22 @@ def copy_object(source_blob_url, container, blob_name, metadata, tags, dest_blob
     container_client = dest_blob_service_client.get_container_client(container)
     if not container_client.exists():
         container_client.create_container()
-
     blob_client = container_client.get_blob_client(blob_name)
-    copy_status = blob_client.start_copy_from_url(
+    copy_result = blob_client.start_copy_from_url(
         source_url=source_blob_url,
         metadata=metadata,
         tags=tags,
-        requires_sync=True
+        requires_sync=False
     )
-    logging.info(f'copy status: {copy_status}')
+    logging.info(f'copy result: {copy_result}')
+
+    copy_status = copy_result['copy_status']
+    while copy_status != 'success':
+        if copy_status in ('failed', 'aborted'):
+            raise Exception(f'Failed to copy file to blob. Copy_status: {copy_status}')
+        logging.info(f'Copy status: {copy_status}. Sleeping for {SLEEP_INTERVAL} seconds...')
+        time.sleep(SLEEP_INTERVAL)
+        copy_status = blob_client.get_blob_properties().copy.status
 
 def compose_tags(existing_tags, fssTags):
     return {
