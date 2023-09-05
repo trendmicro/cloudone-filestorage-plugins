@@ -176,7 +176,7 @@ Resources:
       MemorySize: 512
       Timeout: 30
       Tracing: Active
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Role: !GetAtt PromoteOrQuarantineLambdaExecutionRole.Arn
       VpcConfig:
         !If
           - VpcEnabled
