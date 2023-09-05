@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.2.0
+    SemanticVersion: 1.3.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
@@ -193,10 +193,6 @@ Resources:
           QUARANTINEMODE: !Ref QuarantineMode
           KMSKEYARN: !Ref KMSKeyARNs
           ACL: !Ref ACL
-      PermissionsBoundary: !If
-        - HasPermissionsBoundary
-        - !Ref PermissionsBoundary
-        - !Ref AWS::NoValue
       Events:
         ScanResult:
           Type: SNS
