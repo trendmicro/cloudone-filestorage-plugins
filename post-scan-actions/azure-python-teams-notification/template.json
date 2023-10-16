@@ -11,7 +11,7 @@
         },
         "functionsPackageLocation": {
             "type": "string",
-            "defaultValue": "https://github.com/trendmicro/cloudone-filestorage-plugins/releases/download/azure-python-teams-notification-1.0.0",
+            "defaultValue": "https://github.com/trendmicro/cloudone-filestorage-plugins/releases/download/azure-python-teams-notification-1.1.0",
             "metadata": {
                 "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
             }
@@ -34,6 +34,13 @@
             "metadata": {
                 "description": "The resource ID of the scan result topic Server Bus topic in storage stack."
             }
+        },
+        "LogAnalyticsWorkspaceResourceID": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "This field requires the resource ID of the existing Log Analytics workspace that the deployed Application Insights resources is associated with. If you don't want to manage the Log Analytics workspace by yourself, please leave this field blank."
+            }
         }
     },
     "variables": {
@@ -55,7 +62,8 @@
         "scanResultTopicSubscriptionName": "fss-teams-subscription",
         "scanResultTopicAPIVersion": "2017-04-01",
         "functionAppAPIVersion": "2020-12-01",
-        "scanResultSubscriptionDeployment": "scanResultSubscription"
+        "scanResultSubscriptionDeployment": "scanResultSubscription",
+        "pluginLogAnalyticsWorkspaceName": "[concat('tmlaws0', toLower(uniquestring(resourceGroup().id)))]"
     },
     "resources": [{
             "type": "Microsoft.Storage/storageAccounts",
@@ -167,6 +175,22 @@
             }
         },
         {
+            "type": "Microsoft.OperationalInsights/workspaces",
+            "apiVersion": "2021-12-01-preview",
+            "name": "[variables('pluginLogAnalyticsWorkspaceName')]",
+            "condition": "[not(empty(parameters('LogAnalyticsWorkspaceResourceID')))]",
+            "location": "[variables('location')]",
+            "properties": {
+                "sku": {
+                    "name": "pergb2018"
+                },
+                "retentionInDays": 90,
+                "features": {
+                    "enableLogAccessUsingOnlyResourcePermissions": true
+                }
+            }
+        },
+        {
             "type": "microsoft.insights/components",
             "apiVersion": "2020-02-02-preview",
             "name": "[variables('applicationInsightsName')]",
@@ -177,7 +201,10 @@
             },
             "properties": {
                 "Application_Type": "web",
-                "ApplicationId": "[variables('applicationInsightsName')]"
+                "ApplicationId": "[variables('applicationInsightsName')]",
+                "Flow_Type": "Bluefield",
+                "Request_Source": "rest",
+                "WorkspaceResourceId": "[if(empty(parameters('LogAnalyticsWorkspaceResourceID')), resourceId('Microsoft.OperationalInsights/workspaces/', variables('pluginLogAnalyticsWorkspaceName')), parameters('LogAnalyticsWorkspaceResourceID'))]"
             }
         },
         {

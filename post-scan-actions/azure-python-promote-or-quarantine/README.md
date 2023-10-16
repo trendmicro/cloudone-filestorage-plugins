@@ -114,15 +114,21 @@ If you want to deploy Promote or Quarantine Plugin in Azure VNet, ensure that yo
         VNETFilePrivateDNSZoneResourceID="$FILE_PRIVATE_DNS_ZONE_RESOURCE_ID" \
         VNETBlobPrivateDNSZoneResourceID="$BLOB_PRIVATE_DNS_ZONE_RESOURCE_ID" \
         VNETRestrictedAccessForApplicationInsights=true|false \
+        VNETRestrictedAccessForAzureMonitorResources=true|false \
     ```
 
-    Set the `VNETRestrictedAccessForApplicationInsights` parameter to `true` if you want to log via the private network. Otherwise, leave it as `false`.
+    Set the `VNETRestrictedAccessForApplicationInsights` and `VNETRestrictedAccessForAzureMonitorResources` parameters to `true` if you want to log via the private network. Otherwise, leave them as `false`.
 
-1. If you are using Azure Monitor Private Link Scopes(AMPLS) with VNet, which means you have set the `VNETRestrictedAccessForApplicationInsights` parameter to `true` in the previous step, you should add the application insight to AMPLS using the following command. The APPLICATION_INSIGHT_RESOURCE_ID can be found in the deployment output `applicationInsightResourceID`.
+1. If you are using Azure Monitor Private Link Scopes(AMPLS) with VNet, which means you have set the `VNETRestrictedAccessForApplicationInsights` and `VNETRestrictedAccessForAzureMonitorResources` parameters to `true` in the previous step, you should add the application insight and the Log Analytics workspace to AMPLS using the following command. The APPLICATION_INSIGHT_RESOURCE_ID and LOG_ANALYTICS_WORKSPACE_RESOURCE_ID can be found in the deployment output `applicationInsightResourceID` and `logAnalyticsWorkspaceResourceID`.
 
     ```bash
     az monitor private-link-scope scoped-resource create \
         --linked-resource $APPLICATION_INSIGHT_RESOURCE_ID \
+        --name $SCOPED_RESOURCE_NAME \
+        --resource-group $AMPLS_RESOURCE_GROUP \
+        --scope-name $AMPLS_NAME
+    az monitor private-link-scope scoped-resource create \
+        --linked-resource $LOG_ANALYTICS_WORKSPACE_RESOURCE_ID \
         --name $SCOPED_RESOURCE_NAME \
         --resource-group $AMPLS_RESOURCE_GROUP \
         --scope-name $AMPLS_NAME
