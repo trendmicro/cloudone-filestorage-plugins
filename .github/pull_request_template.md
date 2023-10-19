@@ -10,6 +10,7 @@
   - [ ] Not required
 - Plugins that have versioning
   - [ ] Version bumped and follows [Semantic Versioning](https://semver.org/)
+  - [ ] (Azure Only): Ensure the version for the package location in `template.json` has been updated
   - [ ] Not required
 
 ## Other Notes
