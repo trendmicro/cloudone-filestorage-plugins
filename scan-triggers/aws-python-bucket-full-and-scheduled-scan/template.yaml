@@ -62,7 +62,9 @@ Resources:
     Properties:
       PolicyDocument:
         Statement:
-          - Action: s3:ListBucket
+          - Action:
+              - s3:ListBucket
+              - s3:GetBucketLocation
             Effect: Allow
             Resource:
               Fn::Join:
@@ -114,6 +116,8 @@ Resources:
 
           \  const bucket = event.bucket;
 
+          \  const bucketRegion = await getBucketRegion(bucket);
+
           \  const allKeys = await getAllKeys(bucket);
 
           \  const writeResult = await writeToBucket(allKeys, KEY_WITH_KEYS_TO_SCAN, STATE_BUCKET);
@@ -122,6 +126,8 @@ Resources:
           \  return {
 
           \    bucket: bucket,
+
+          \    bucketRegion: bucketRegion,
 
           \    stateBucket: STATE_BUCKET,
 
@@ -133,6 +139,13 @@ Resources:
 
           };
 
+          const getBucketRegion = async (bucket) => {
+
+          \  const response = await s3.getBucketLocation({Bucket: bucket}).promise();
+
+          \  return response?.LocationConstraint || 'us-east-1';
+
+          };
 
           const getKeysInPage = async (bucket, continuationToken) => {
 
@@ -323,6 +336,7 @@ Resources:
               const stateKey = event.stateKey;
               const scanLimitPerIteration = event.limit;
               const bucket = event.bucket;
+              const bucketRegion = event.bucketRegion;
               const allKeys = await fetchKeys(stateBucket, stateKey);
 
               const filtered = filterKeys(allKeys, scanLimitPerIteration);
@@ -335,6 +349,7 @@ Resources:
               const response = {
                   keys: filtered.keysToScan,
                   bucket: bucket,
+                  bucketRegion: bucketRegion,
                   limit: scanLimitPerIteration,
                   remainingKeysLength: filtered.remainingKeys? filtered.remainingKeys.length : null,
                   stateBucket: event.stateBucket,
@@ -429,13 +444,12 @@ Resources:
           print(f'report object key: {report_object_key}')
 
           region = boto3.session.Session().region_name
-          s3_client_path = boto3.client('s3', region, config=Config(s3={'addressing_style': 'path'}, signature_version='s3v4'))
-          s3_client_virtual = boto3.client('s3', region, config=Config(s3={'addressing_style': 'virtual'}, signature_version='s3v4'))
 
-          def create_presigned_url(bucket_name, object_name, expiration):
+          def create_presigned_url(bucket_name, bucket_region, object_name, expiration):
               """Generate a presigned URL to share an S3 object
 
               :param bucket_name: string
+              :param bucket_region: string
               :param object_name: string
               :param expiration: Time in seconds for the presigned URL to remain valid
               :return: Presigned URL as string. If error, returns None.
@@ -443,7 +457,9 @@ Resources:
 
               # Generate a presigned URL for the S3 object
               try:
-                  s3_client = s3_client_path if '.' in bucket_name else s3_client_virtual
+                  s3_endpoint_url = f'https://s3.{bucket_region}.amazonaws.com'
+                  s3_addressing_style = 'path' if '.' in bucket_name else 'virtual'
+                  s3_client = boto3.client('s3', region, config=Config(s3={'addressing_style': s3_addressing_style}, signature_version='s3v4'), endpoint_url=s3_endpoint_url)
                   response = s3_client.generate_presigned_url(
                       'get_object',
                       Params={
@@ -486,7 +502,7 @@ Resources:
           def is_folder(key):
               return key.endswith('/')
 
-          def handle_step_functions_event(bucket, key):
+          def handle_step_functions_event(bucket, bucket_region, key):
               key = urllib.parse.unquote_plus(key)
               amz_request_id = "f"
               event_time = datetime.datetime.utcnow().isoformat() # ISO-8601 format, 1970-01-01T00:00:00.000Z, when Amazon S3 finished processing the request
@@ -497,6 +513,7 @@ Resources:
 
               presigned_url = create_presigned_url(
                   bucket,
+                  bucket_region,
                   key,
                   expiration = 60 * 60 # in seconds
               )
@@ -508,7 +525,8 @@ Resources:
 
               bucket = event['bucket']
               key = event['key']
-              handle_step_functions_event(bucket, key)
+              bucket_region = event['bucketRegion']
+              handle_step_functions_event(bucket, bucket_region, key)
       Role:
         Fn::GetAtt:
           - ScanOneObjectExecutionRole
@@ -619,7 +637,8 @@ Resources:
                                   "End": true,
                                   "Parameters": {
                                     "key.$": "$$.Map.Item.Value",
-                                    "bucket.$": "$.bucket"
+                                    "bucket.$": "$.bucket",
+                                    "bucketRegion.$": "$.bucketRegion"
                                   },
                                   "Iterator": {
                                     "StartAt": "Scan a Object",
@@ -693,6 +712,8 @@ Resources:
               \                        \"limit.$\": \"$.limit\",
 
               \                        \"bucket.$\": \"$.bucket\",
+
+              \                        \"bucketRegion.$\": \"$.bucketRegion\",
 
               \                        \"AWS_STEP_FUNCTIONS_STARTED_BY_EXECUTION_ID.$\": \"$$.Execution.Id\"
 
@@ -829,6 +850,8 @@ Resources:
               \                \"stateKey.$\": \"$.stateKey\",
 
               \                \"bucket.$\": \"$.bucket\",
+
+              \                \"bucketRegion.$\": \"$.bucketRegion\",
 
               \                \"stateBucket.$\": \"$.stateBucket\",
 
