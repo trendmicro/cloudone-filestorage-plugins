@@ -13,7 +13,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.2.0
+    SemanticVersion: 1.3.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
@@ -53,6 +53,23 @@ Parameters:
     Description: |
       The method by which files were quarantined.
       (Options: move, copy)
+  VpcSubnetId:
+    Type: String
+    Default: ''
+    Description: |
+      [Optional] The subnet ID of the VPC where the S3 bucket is located.
+      Leave it blank to disable using a VPC.
+  VpcSecurityGroupId:
+    Type: String
+    Default: ''
+    Description: |
+      [Optional] The security group ID of the VPC where the S3 bucket is located.
+      Leave it blank to disable using a VPC.
+  KMSKeyARNs:
+    Type: CommaDelimitedList
+    Default: ''
+    Description: |
+      [Optional] The list of AWS KMS keys' ARNs used for encryption to the scanning, quarantine and promote buckets.
   ACL:
     Type: String
     AllowedValues:
@@ -68,6 +85,11 @@ Parameters:
     Description: |
       [Optional] Apply an access control list (ACL) on the file after it has been promoted or quarantined.
       (Options: private, public-read, public-read-write, authenticated-read, aws-exec-read, bucket-owner-read, bucket-owner-full-control)
+  PermissionsBoundary:
+    Type: String
+    Default: ''
+    Description: |
+      [Optional] The ARN of the policy used to set the permissions boundary for all the roles that will be created. Leave it blank to disable using a permissions boundary.
 
 Conditions:
   PromoteEnabled:
@@ -76,8 +98,75 @@ Conditions:
     !Not [!Equals [!Ref QuarantineBucketName, '']]
   PutACL:
     !Not [!Equals [!Ref ACL, '']]
+  IsBucketSSEKMSEnabled:
+    !Not [!Equals [!Ref KMSKeyARNs, '']]
+  HasPermissionsBoundary:
+    !Not [!Equals [!Ref PermissionsBoundary, '']]
+  VpcEnabled: !Not [!Or [!Equals [!Ref VpcSubnetId, ''], !Equals [!Ref VpcSecurityGroupId, '']]]
 
 Resources:
+  PromoteOrQuarantineLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      PermissionsBoundary: !If
+        - HasPermissionsBoundary
+        - !Ref PermissionsBoundary
+        - !Ref AWS::NoValue
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: lambda-execute
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: 'arn:aws:logs:*:*:*'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:DeleteObject
+                  - s3:GetObjectTagging
+                Resource:
+                  - !Sub arn:${AWS::Partition}:s3:::${ScanningBucketName}/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                  - s3:PutObject
+                  - s3:PutObjectTagging
+                  - !If
+                    - PutACL
+                    - s3:PutObjectAcl
+                    - !Ref AWS::NoValue
+                Resource:
+                  - !If
+                    - PromoteEnabled
+                    - !Sub arn:${AWS::Partition}:s3:::${PromoteBucketName}/*
+                    - !Ref AWS::NoValue
+                  - !If
+                    - QuarantineEnabled
+                    - !Sub arn:${AWS::Partition}:s3:::${QuarantineBucketName}/*
+                    - !Ref AWS::NoValue
+              - !If 
+                - IsBucketSSEKMSEnabled
+                - Effect: Allow
+                  Action:
+                    - kms:Decrypt
+                    - kms:GenerateDataKey
+                  Resource: !Ref KMSKeyARNs
+                - !Ref AWS::NoValue
   PromoteOrQuarantineLambda:
     Type: AWS::Serverless::Function
     Properties:
@@ -87,46 +176,23 @@ Resources:
       MemorySize: 512
       Timeout: 30
       Tracing: Active
+      Role: !GetAtt PromoteOrQuarantineLambdaExecutionRole.Arn
+      VpcConfig:
+        !If
+          - VpcEnabled
+          - SubnetIds:
+              - !Ref VpcSubnetId
+            SecurityGroupIds:
+              - !Ref VpcSecurityGroupId
+          - !Ref AWS::NoValue
       Environment:
         Variables:
           PROMOTEBUCKET: !Ref PromoteBucketName
           PROMOTEMODE: !Ref PromoteMode
           QUARANTINEBUCKET: !Ref QuarantineBucketName
           QUARANTINEMODE: !Ref QuarantineMode
+          KMSKEYARN: !Ref KMSKeyARNs
           ACL: !Ref ACL
-      Policies:
-        - Statement:
-            Effect: Allow
-            Action:
-              - s3:GetObject
-              - s3:DeleteObject
-              - s3:GetObjectTagging
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${ScanningBucketName}/*
-        - Statement:
-            Effect: Allow
-            Action:
-              - s3:ListBucket
-            Resource:
-              - !Sub arn:${AWS::Partition}:s3:::${ScanningBucketName}
-        - Statement:
-            Effect: Allow
-            Action:
-              - s3:PutObject
-              - s3:PutObjectTagging
-              - !If
-                - PutACL
-                - s3:PutObjectAcl
-                - !Ref AWS::NoValue
-            Resource:
-              - !If
-                - PromoteEnabled
-                - !Sub arn:${AWS::Partition}:s3:::${PromoteBucketName}/*
-                - !Ref AWS::NoValue
-              - !If
-                - QuarantineEnabled
-                - !Sub arn:${AWS::Partition}:s3:::${QuarantineBucketName}/*
-                - !Ref AWS::NoValue
       Events:
         ScanResult:
           Type: SNS
