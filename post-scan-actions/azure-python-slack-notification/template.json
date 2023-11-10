@@ -11,7 +11,7 @@
         },
         "functionsPackageLocation": {
             "type": "string",
-            "defaultValue": "https://github.com/trendmicro/cloudone-filestorage-plugins/releases/download/azure-python-slack-notification-1.1.0",
+            "defaultValue": "https://github.com/trendmicro/cloudone-filestorage-plugins/releases/download/azure-python-slack-notification-1.1.1",
             "metadata": {
                 "description": "Warning: Do not modify the field. Modifications may cause your deployment to fail."
             }
@@ -188,7 +188,7 @@
             "type": "Microsoft.OperationalInsights/workspaces",
             "apiVersion": "2021-12-01-preview",
             "name": "[variables('pluginLogAnalyticsWorkspaceName')]",
-            "condition": "[not(empty(parameters('LogAnalyticsWorkspaceResourceID')))]",
+            "condition": "[empty(parameters('LogAnalyticsWorkspaceResourceID'))]",
             "location": "[variables('location')]",
             "properties": {
                 "sku": {
