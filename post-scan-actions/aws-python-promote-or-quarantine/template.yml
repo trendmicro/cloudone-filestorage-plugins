@@ -54,17 +54,17 @@ Parameters:
       The method by which files were quarantined.
       (Options: move, copy)
   VpcSubnetId:
-    Type: String
+    Type: CommaDelimitedList 
     Default: ''
     Description: |
-      [Optional] The subnet ID of the VPC where the S3 bucket is located.
-      Leave it blank to disable using a VPC.
+      [Optional] A comma-separated list of VPC Subnet IDs that are attached to Lambda functions.
+      Leave it blank if you don't want to attach Lambda functions to a VPC.
   VpcSecurityGroupId:
-    Type: String
+    Type: CommaDelimitedList 
     Default: ''
     Description: |
-      [Optional] The security group ID of the VPC where the S3 bucket is located.
-      Leave it blank to disable using a VPC.
+      [Optional] A comma-separated list of the VPC Security Group IDs that are attached to Lambda functions. 
+      Leave it blank if you don't want to attach Lambda functions to a VPC.
   KMSKeyARNs:
     Type: CommaDelimitedList
     Default: ''
@@ -103,7 +103,12 @@ Conditions:
   HasPermissionsBoundary:
     !Not [!Equals [!Ref PermissionsBoundary, '']]
   VpcEnabled: !Not [!Or [!Equals [!Ref VpcSubnetId, ''], !Equals [!Ref VpcSecurityGroupId, '']]]
-
+    !Not [
+      !Or [
+        !Equals [!Join [',', !Ref VpcSubnetId], ''],
+        !Equals [!Join [',', !Ref VpcSecurityGroupId], ''],
+      ],
+    ]
 Resources:
   PromoteOrQuarantineLambdaExecutionRole:
     Type: AWS::IAM::Role
