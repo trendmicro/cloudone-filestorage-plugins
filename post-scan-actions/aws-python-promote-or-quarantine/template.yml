@@ -11,9 +11,19 @@ Metadata:
     SpdxLicenseId: Apache-2.0
     LicenseUrl: ../../LICENSE
     ReadmeUrl: README.md
-    Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, promote, quarantine]
+    Labels:
+      [
+        trendmicro,
+        cloudone,
+        filestorage,
+        s3,
+        bucket,
+        plugin,
+        promote,
+        quarantine,
+      ]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.3.3
+    SemanticVersion: 1.3.4
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
@@ -54,16 +64,16 @@ Parameters:
       The method by which files were quarantined.
       (Options: move, copy)
   VpcSubnetId:
-    Type: CommaDelimitedList 
+    Type: CommaDelimitedList
     Default: ''
     Description: |
       [Optional] A comma-separated list of VPC Subnet IDs that are attached to Lambda functions.
       Leave it blank if you don't want to attach Lambda functions to a VPC.
   VpcSecurityGroupId:
-    Type: CommaDelimitedList 
+    Type: CommaDelimitedList
     Default: ''
     Description: |
-      [Optional] A comma-separated list of the VPC Security Group IDs that are attached to Lambda functions. 
+      [Optional] A comma-separated list of the VPC Security Group IDs that are attached to Lambda functions.
       Leave it blank if you don't want to attach Lambda functions to a VPC.
   KMSKeyARNs:
     Type: CommaDelimitedList
@@ -92,21 +102,16 @@ Parameters:
       [Optional] The ARN of the policy used to set the permissions boundary for all the roles that will be created. Leave it blank to disable using a permissions boundary.
 
 Conditions:
-  PromoteEnabled:
-    !Not [!Equals [!Ref PromoteBucketName, '']]
-  QuarantineEnabled:
-    !Not [!Equals [!Ref QuarantineBucketName, '']]
-  PutACL:
-    !Not [!Equals [!Ref ACL, '']]
-  IsBucketSSEKMSEnabled:
-    !Not [!Equals [!Join ["", !Ref KMSKeyARNs], '']]
-  HasPermissionsBoundary:
-    !Not [!Equals [!Ref PermissionsBoundary, '']]
-  VpcEnabled: !Not [!Or [!Equals [!Ref VpcSubnetId, ''], !Equals [!Ref VpcSecurityGroupId, '']]]
+  PromoteEnabled: !Not [!Equals [!Ref PromoteBucketName, '']]
+  QuarantineEnabled: !Not [!Equals [!Ref QuarantineBucketName, '']]
+  PutACL: !Not [!Equals [!Ref ACL, '']]
+  IsBucketSSEKMSEnabled: !Not [!Equals [!Join ['', !Ref KMSKeyARNs], '']]
+  HasPermissionsBoundary: !Not [!Equals [!Ref PermissionsBoundary, '']]
+  VpcEnabled:
     !Not [
       !Or [
-        !Equals [!Join [',', !Ref VpcSubnetId], ''],
-        !Equals [!Join [',', !Ref VpcSecurityGroupId], ''],
+        !Equals [!Join ['', !Ref VpcSubnetId], ''],
+        !Equals [!Join ['', !Ref VpcSecurityGroupId], ''],
       ],
     ]
 Resources:
@@ -182,14 +187,11 @@ Resources:
       Timeout: 30
       Tracing: Active
       Role: !GetAtt PromoteOrQuarantineLambdaExecutionRole.Arn
-      VpcConfig:
-        !If
-          - VpcEnabled
-          - SubnetIds:
-              - !Ref VpcSubnetId
-            SecurityGroupIds:
-              - !Ref VpcSecurityGroupId
-          - !Ref AWS::NoValue
+      VpcConfig: !If
+        - VpcEnabled
+        - SubnetIds: !Ref VpcSubnetId
+          SecurityGroupIds: !Ref VpcSecurityGroupId
+        - !Ref AWS::NoValue
       Environment:
         Variables:
           PROMOTEBUCKET: !Ref PromoteBucketName
