@@ -41,7 +41,7 @@ jobs:
 
       - name: Get changed files
         id: changed_files
-        uses: tj-actions/changed-files@v36
+        uses: tj-actions/changed-files@v41
         with:
           json: true
           files: |
