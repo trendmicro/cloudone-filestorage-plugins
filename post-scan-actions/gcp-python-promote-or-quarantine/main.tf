@@ -2,7 +2,7 @@ terraform {
   required_providers {
     google = {
       source = "hashicorp/google"
-      version = "~> 4.0.0"
+      version = "~> 5.11.0"
     }
   }
 }
@@ -49,8 +49,10 @@ resource "google_project_iam_custom_role" "scanning_bucket_access_role" {
   permissions = var.promote_mode == "move" || var.quarantine_mode == "move" ? [
     "storage.objects.delete",
     "storage.objects.get",
+    "storage.objects.update"
   ] : [
     "storage.objects.get",
+    "storage.objects.update"
   ]
 }
 
