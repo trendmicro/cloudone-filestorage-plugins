@@ -6,7 +6,7 @@ Metadata:
 Resources:
   c1api:
     Type: AWS::SecretsManager::Secret
-    Properties: 
+    Properties:
       Description: C1 API KEY
       SecretString: !Sub '{"c1apikey":"${C1API}"}'
   storagelambdarole:
@@ -35,7 +35,7 @@ Resources:
               - "logs:CreateLogStream"
               - "logs:PutLogEvents"
               - "logs:DescribeLogGroups"
-              - "logs:PutRetentionPolicy" 
+              - "logs:PutRetentionPolicy"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -47,7 +47,7 @@ Resources:
               - "iam:DeleteRole"
               - "iam:PassRole"
               - "iam:DeleteRolePolicy"
-              - "iam:GetRolePolicy"  
+              - "iam:GetRolePolicy"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -75,7 +75,7 @@ Resources:
               - "cloudformation:DescribeStackEvents"
               - "cloudformation:DescribeStackResource"
               - "cloudformation:ListExports"
-              - "cloudformation:ListStackInstances"  
+              - "cloudformation:ListStackInstances"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -88,7 +88,7 @@ Resources:
               - "lambda:GetEventSourceMapping"
               - "lambda:CreateEventSourceMapping"
               - "lambda:GetFunction"
-              - "lambda:AddPermission"  
+              - "lambda:AddPermission"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -102,7 +102,7 @@ Resources:
               - "sqs:GetQueueAttributes"
               - "sqs:CreateQueue"
               - "sqs:ListDeadLetterSourceQueues"
-              - "sqs:SendMessage"  
+              - "sqs:SendMessage"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -110,24 +110,24 @@ Resources:
               - "sns:Publish"
               - "sns:SetTopicAttributes"
               - "sns:Subscribe"
-              - "sns:GetTopicAttributes"  
+              - "sns:GetTopicAttributes"
             Resource: "*"
           - Effect: "Allow"
             Action:
-              - "sts:AssumeRole"  
+              - "sts:AssumeRole"
             Resource: !GetAtt
               - storagelambda
               - Arn
           - Effect: Allow
             Action:
-              - "secretsmanager:GetSecretValue"     
+              - "secretsmanager:GetSecretValue"
             Resource: !Ref c1api
       Roles:
         - !Ref storagelambdarole
   storagelambda:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.8
+      Runtime: python3.12
       Timeout: 500
       Handler: index.lambda_handler
       Role: !GetAtt
@@ -155,7 +155,7 @@ Resources:
               sm_data = json.loads(secrets["SecretString"])
               new_api_format = sm_data["c1apikey"]
               cloud_one_api_key = "ApiKey "+new_api_format
-              
+
               # gather bucket name from event
               bucket_name = event["detail"]["requestParameters"]["bucketName"]
               # filter event to bucket name
@@ -179,7 +179,7 @@ Resources:
                   # gather aws account ID
                   account_id = event["account"]
                   print("AWS account ID: " + account_id)
-                  
+
                   #gather scanner stack id
                   id_call = http.request('GET', stacks_api_url+"stacks", headers = {'Authorization': cloud_one_api_key, 'Api-Version': 'v1'})
                   try:
@@ -384,7 +384,7 @@ Resources:
               - "logs:CreateLogGroup"
               - "logs:CreateLogStream"
               - "logs:PutLogEvents"
-              - "logs:PutRetentionPolicy"  
+              - "logs:PutRetentionPolicy"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -394,7 +394,7 @@ Resources:
               - "iam:GetRole"
               - "iam:GetRolePolicy"
               - "iam:DeleteRole"
-              - "iam:DeleteRolePolicy"  
+              - "iam:DeleteRolePolicy"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -408,7 +408,7 @@ Resources:
               - "cloudformation:DescribeStacks"
               - "cloudformation:GetTemplate"
               - "cloudformation:DeleteStack"
-              - "cloudformation:ListStacks"  
+              - "cloudformation:ListStacks"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -420,7 +420,7 @@ Resources:
               - "sqs:RemovePermission"
               - "sqs:GetQueueAttributes"
               - "sqs:ListDeadLetterSourceQueues"
-              - "sqs:DeleteQueue"  
+              - "sqs:DeleteQueue"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -429,7 +429,7 @@ Resources:
               - "sns:SetTopicAttributes"
               - "sns:GetTopicAttributes"
               - "sns:RemovePermission"
-              - "sns:DeleteTopic"  
+              - "sns:DeleteTopic"
             Resource: "*"
           - Effect: "Allow"
             Action:
@@ -437,11 +437,11 @@ Resources:
               - "lambda:InvokeFunction"
               - "lambda:GetEventSourceMapping"
               - "lambda:GetFunction"
-              - "lambda:RemovePermission"  
+              - "lambda:RemovePermission"
             Resource: "*"
           - Effect: "Allow"
             Action:
-              - "secretsmanager:GetSecretValue"  
+              - "secretsmanager:GetSecretValue"
             Resource: !Ref c1api
           - Effect: Allow
             Action:
@@ -455,7 +455,7 @@ Resources:
   removestoragelambda:
     Type: AWS::Lambda::Function
     Properties:
-      Runtime: python3.8
+      Runtime: python3.12
       Timeout: 120
       Handler: index.lambda_handler
       Role: !GetAtt
@@ -486,7 +486,7 @@ Resources:
               #gather bucket name from event
               bucket_name = event['detail']['requestParameters']['bucketName']
               print("S3 Bucket: " + bucket_name)
-                
+
               # gather cloud one ext id
               r = http.request(
                   "GET",
@@ -499,7 +499,7 @@ Resources:
               ext = json.loads(r.data.decode("utf-8"))
               ext_id = ext["externalID"]
               print("CloudOne ExtID: " + ext_id)
-                
+
               # gather aws account ID
               account_id = event["account"]
               print("AWS account ID: " + account_id)
@@ -512,7 +512,7 @@ Resources:
                   "provider": "aws",
                   "status": "ok",
                   "type": "storage"
-                }  
+                }
               id_call = http.request('GET', stacks_url, q_params, headers = {'Authorization': cloud_one_api_key, 'Api-Version': 'v1'})
               try:
                   id_resp = json.loads(id_call.data.decode('utf-8'))

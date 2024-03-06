@@ -11,7 +11,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['trendmicro','cloudone','filestorage','s3','bucket','plugin','full','full-scan','scheduled','scheduled-scan']
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 2.0.0
+    SemanticVersion: 2.1.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/scan-triggers/aws-python-bucket-full-and-scheduled-scan
 Parameters:
   BucketName:
@@ -100,126 +100,86 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Code:
-        ZipFile: "const AWS = require('aws-sdk');
-
-          const s3 = new AWS.S3();
-
+        ZipFile: |
+          const { S3Client, GetBucketLocationCommand, ListObjectsV2Command, PutObjectCommand } = require('@aws-sdk/client-s3');
+          const client = new S3Client();
 
           const STATE_BUCKET = process.env.STATE_BUCKET;
 
-          const KEY_WITH_KEYS_TO_SCAN ='keys';
-
+          const KEY_WITH_KEYS_TO_SCAN = 'keys';
 
           exports.lambda_handler = async (event) => {
 
-          \  console.log(event);
+            console.log(event);
 
-          \  const bucket = event.bucket;
+            const bucket = event.bucket;
 
-          \  const bucketRegion = await getBucketRegion(bucket);
+            const bucketRegion = await getBucketRegion(bucket);
 
-          \  const allKeys = await getAllKeys(bucket);
+            const allKeys = await getAllKeys(bucket);
 
-          \  const writeResult = await writeToBucket(allKeys, KEY_WITH_KEYS_TO_SCAN, STATE_BUCKET);
+            const writeResult = await writeToBucket(allKeys, KEY_WITH_KEYS_TO_SCAN, STATE_BUCKET);
 
+            return {
 
-          \  return {
+              bucket: bucket,
 
-          \    bucket: bucket,
+              bucketRegion: bucketRegion,
 
-          \    bucketRegion: bucketRegion,
+              stateBucket: STATE_BUCKET,
 
-          \    stateBucket: STATE_BUCKET,
+              stateKey: KEY_WITH_KEYS_TO_SCAN,
 
-          \    stateKey: KEY_WITH_KEYS_TO_SCAN,
-
-          \    limit: 500
-
-          \  }
-
+              limit: 500
+            }
           };
 
           const getBucketRegion = async (bucket) => {
 
-          \  const response = await s3.getBucketLocation({Bucket: bucket}).promise();
+            const response = await client.send(new GetBucketLocationCommand({
+              Bucket: bucket
+            }))
 
-          \  return response?.LocationConstraint || 'us-east-1';
+            return response?.LocationConstraint || 'us-east-1';
 
           };
 
           const getKeysInPage = async (bucket, continuationToken) => {
-
-          \  const params = {
-
-          \    Bucket: bucket,
-
-          \    ContinuationToken: continuationToken? continuationToken : null
-
-          \  };
-
-          \  const response = await s3.listObjectsV2(params).promise();
-
-          \  return {
-
-          \    keys: response.Contents.map(object => object.Key),
-
-          \    nextContinuationToken: response.NextContinuationToken
-
-          \  };
-
+            const response = await client.send(new ListObjectsV2Command({
+              Bucket: bucket,
+              ContinuationToken: continuationToken ? continuationToken : null
+            }))
+            return {
+              keys: response.Contents.map(object => object.Key),
+              nextContinuationToken: response.NextContinuationToken
+            };
           };
 
 
           const getAllKeys = async (bucket) => {
-
-          \  let {keys, nextContinuationToken} = await getKeysInPage(bucket);
-
-          \  while (nextContinuationToken){
-
-          \    const result = await getKeysInPage(bucket, nextContinuationToken);
-
-          \    console.log(result);
-
-          \    keys.push(...result.keys);
-
-          \    nextContinuationToken = result.nextContinuationToken? result.nextContinuationToken : null;
-
-          \  }
-
-          \  return keys;
-
+            let { keys, nextContinuationToken } = await getKeysInPage(bucket);
+            while (nextContinuationToken) {
+              const result = await getKeysInPage(bucket, nextContinuationToken);
+              console.log(result);
+              keys.push(...result.keys);
+              nextContinuationToken = result.nextContinuationToken ? result.nextContinuationToken : null;
+            }
+            return keys;
           };
-
 
           const writeToBucket = async (content, key, bucket) => {
-
-          \  try {
-
-          \    const params = {
-
-          \      Bucket: bucket,
-
-          \      Key: key,
-
-          \      ContentType:'binary',
-
-          \      Body: Buffer.from(JSON.stringify(content))
-
-          \    };
-
-          \    const result = await s3.putObject(params).promise();
-
-          \    return result;
-
-          \  } catch (error) {
-
-          \    return error;
-
-          \  }
-
+            try {
+              const result = await client.send(new PutObjectCommand({
+                Bucket: bucket,
+                Key: key,
+                ContentType: 'binary',
+                Body: Buffer.from(JSON.stringify(content))
+              }))
+              return result;
+            } catch (error) {
+              return error;
+            }
           };
-
-          \  "
       Role:
         Fn::GetAtt:
           - PaginatorExecutionRole
@@ -232,7 +192,7 @@ Resources:
             Ref: StateBucket
       Handler: index.lambda_handler
       MemorySize: 1024
-      Runtime: nodejs16.x
+      Runtime: nodejs20.x
       Timeout: 900
     DependsOn:
       - PaginatorExecutionRoleDefaultPolicy
@@ -289,74 +249,72 @@ Resources:
     Properties:
       Code:
         ZipFile: |
-          const AWS = require('aws-sdk');
-          const s3 = new AWS.S3();
+          const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+          const client = new S3Client();
 
           const fetchKeys = async (bucket, key) => {
-              try {
-                  const params = {
-                      Bucket: bucket,
-                      Key: key
-                  };
-                  const result = await s3.getObject(params).promise();
-                  const keys = JSON.parse(result.Body.toString('utf-8'));
-                  return keys;
-              } catch (error) {
-                  throw error;
-              }
+            try {
+              const result = await client.send(new GetObjectCommand({
+                Bucket: bucket,
+                Key: key
+              }))
+              const keys = JSON.parse(result.Body.toString('utf-8'));
+              return keys;
+            } catch (error) {
+              throw error;
+            }
           };
 
           const writeToBucket = async (content, key, bucket) => {
-              try {
-                const params = {
-                  Bucket: bucket,
-                  Key: key,
-                  ContentType:'binary',
-                  Body: Buffer.from(JSON.stringify(content))
-                };
-                const result = await s3.putObject(params).promise();
-                return result;
-              } catch (error) {
-                return error;
-              }
+            try {
+              const result = await client.send(new PutObjectCommand({
+                Bucket: bucket,
+                Key: key,
+                ContentType: 'binary',
+                Body: Buffer.from(JSON.stringify(content))
+              }))
+              return result;
+            } catch (error) {
+              return error;
+            }
           };
 
           const filterKeys = (keys, limit) => {
-              const keysToScan = keys.slice(0, limit);
-              const remainingKeys = keys.slice(limit);
-              return {
-                  keysToScan,
-                  remainingKeys
-              };
+            const keysToScan = keys.slice(0, limit);
+            const remainingKeys = keys.slice(limit);
+            return {
+              keysToScan,
+              remainingKeys
+            };
           };
 
           exports.lambda_handler = async (event) => {
-              console.log(event);
-              const stateBucket = event.stateBucket;
-              const stateKey = event.stateKey;
-              const scanLimitPerIteration = event.limit;
-              const bucket = event.bucket;
-              const bucketRegion = event.bucketRegion;
-              const allKeys = await fetchKeys(stateBucket, stateKey);
+            console.log(event);
+            const stateBucket = event.stateBucket;
+            const stateKey = event.stateKey;
+            const scanLimitPerIteration = event.limit;
+            const bucket = event.bucket;
+            const bucketRegion = event.bucketRegion;
+            const allKeys = await fetchKeys(stateBucket, stateKey);
 
-              const filtered = filterKeys(allKeys, scanLimitPerIteration);
+            const filtered = filterKeys(allKeys, scanLimitPerIteration);
 
-              // Rewrite file in bucket with remaining keys
-              if (filtered.remainingKeys){
-                  await writeToBucket(filtered.remainingKeys, stateKey, stateBucket);
-              }
+            // Rewrite file in bucket with remaining keys
+            if (filtered.remainingKeys) {
+              await writeToBucket(filtered.remainingKeys, stateKey, stateBucket);
+            }
 
-              const response = {
-                  keys: filtered.keysToScan,
-                  bucket: bucket,
-                  bucketRegion: bucketRegion,
-                  limit: scanLimitPerIteration,
-                  remainingKeysLength: filtered.remainingKeys? filtered.remainingKeys.length : null,
-                  stateBucket: event.stateBucket,
-                  stateKey: event.stateKey
-              };
+            const response = {
+              keys: filtered.keysToScan,
+              bucket: bucket,
+              bucketRegion: bucketRegion,
+              limit: scanLimitPerIteration,
+              remainingKeysLength: filtered.remainingKeys ? filtered.remainingKeys.length : null,
+              stateBucket: event.stateBucket,
+              stateKey: event.stateKey
+            };
 
-              return response;
+            return response;
           };
       Role:
         Fn::GetAtt:
@@ -370,7 +328,7 @@ Resources:
             Ref: BucketName
       Handler: index.lambda_handler
       MemorySize: 512
-      Runtime: nodejs16.x
+      Runtime: nodejs20.x
       Timeout: 900
     DependsOn:
       - FilterExecutionRoleDefaultPolicy
@@ -539,7 +497,7 @@ Resources:
             Ref: ScannerQueueUrl
       Handler: index.lambda_handler
       MemorySize: 128
-      Runtime: python3.9
+      Runtime: python3.12
       Timeout: 60
     DependsOn:
       - ScanOneObjectExecutionRoleDefaultPolicy

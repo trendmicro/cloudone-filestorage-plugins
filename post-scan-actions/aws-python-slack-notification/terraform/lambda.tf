@@ -20,7 +20,7 @@ resource "aws_lambda_function" "slack_notification_lambda" {
   handler       = "handler.lambda_handler"
   memory_size = 512
   timeout = 30
-  runtime = "python3.8"
+  runtime = "python3.12"
   tracing_config {
       mode = "Active"
     }

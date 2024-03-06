@@ -1,4 +1,4 @@
 # Do not include azure-functions-worker as it may conflict with the Azure Functions platform
 
-azure-functions==1.7.2
+azure-functions==1.18.0
 urllib3==1.26.18

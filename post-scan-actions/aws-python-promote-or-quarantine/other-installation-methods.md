@@ -166,7 +166,7 @@
     - Click **Create function**.
     - Select the **Author from scratch** box.
     - In the **Function name** field, enter a name. Example: `FSS_Prom_Quar_Lambda`.
-    - From the **Runtime** drop-down list, select **Python 3.8**.
+    - From the **Runtime** drop-down list, select **Python 3.12**.
     - Under **Permissions**, expand **Choose or create an execution role**.
     - Select **Use an existing role**.
     - In the drop-down list, select the execution role you created earlier. Example: `FSS_Lambda_Role`.
@@ -207,7 +207,7 @@
     ```bash
     aws lambda create-function --function-name <YOUR_FSS_FUNC_NAME> \
     --role <YOUR_FSS_LAMBDA_ROLE> \
-    --runtime python3.8 \
+    --runtime python3.12 \
     --timeout 30 \
     --memory-size 512 \
     --handler handler.lambda_handler \

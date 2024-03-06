@@ -44,7 +44,7 @@ Resources:
           Ref: LambdaZipKey
       Handler: index.handler
       Role: !GetAtt SentToSecurityHubLambdaFunctionServiceRole.Arn
-      Runtime: nodejs18.x
+      Runtime: nodejs20.x
       Environment:
         Variables:
           SECURITY_HUB_ARN: !Sub arn:${AWS::Partition}:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default

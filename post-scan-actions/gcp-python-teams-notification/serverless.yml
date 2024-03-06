@@ -14,7 +14,7 @@ params:
 provider:
   name: google
   stage: ${opt:stage, self:custom.defaultStage}
-  runtime: python39
+  runtime: python312
   region: ${param:DEPLOYMENT_REGION}
   project: ${param:GCP_PROJECT_ID}
   environment:
