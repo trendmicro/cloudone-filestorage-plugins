@@ -131,7 +131,7 @@ After a scan occurs, this example Lambda function sends out a notification Email
     - Click **Create function**.
     - Select the **Author from scratch** box.
     - In the **Function name** field, enter a name. Example: `FSS_Scan_Send_Email`.
-    - From the **Runtime** drop-down list, select **Python 3.8**.
+    - From the **Runtime** drop-down list, select **Python 3.12**.
     - Under **Permissions**, expand **Choose or create an execution role**.
     - Select **Use an existing role**.
     - In the drop-down list, select the execution role you created earlier. Example: `FSS_Lambda_Email_Role`.
@@ -175,7 +175,7 @@ After a scan occurs, this example Lambda function sends out a notification Email
     ```bash
     aws lambda create-function --function-name <YOUR_FSS_SCAN_SEND_EMAIL> \
     --role <YOUR_FSS_LAMBDA_EMAIL_ROLE> \
-    --runtime python3.8 \
+    --runtime python3.12 \
     --timeout 30 \
     --memory-size 512 \
     --handler handler.lambda_handler \
@@ -217,11 +217,11 @@ After a scan occurs, this example Lambda function sends out a notification Email
 
 <details>
 <summary>Using the AWS console</summary>
-    
+
 1. **Find the 'ScanResultTopic' SNS topic ARN**
 
     - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources**.
-    - Scroll down to locate the  **ScanResultTopic** Logical ID. 
+    - Scroll down to locate the  **ScanResultTopic** Logical ID.
     - Take note of the **ScanResultTopic** ARN. Example: `arn:aws:sns:us-east-1:123445678901:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
 
 2. **Set the Lambda function trigger**
@@ -239,13 +239,13 @@ After a scan occurs, this example Lambda function sends out a notification Email
 <details>
 <summary>Using the AWS CLI</summary>
 
-1. **Find the 'ScanResultTopic' SNS topic ARN** 
+1. **Find the 'ScanResultTopic' SNS topic ARN**
     - In the AWS console, go to **Services > CloudFormation** > your all-in-one stack > **Resources** > your storage stack > **Resources**.
-    - Scroll down to locate the  **ScanResultTopic** Logical ID. 
+    - Scroll down to locate the  **ScanResultTopic** Logical ID.
     - Copy the **ScanResultTopic** ARN to a temporary location. Example: `arn:aws:sns:us-east-1:123445678901:FileStorageSecurity-All-In-One-Stack-StorageStack-1IDPU1PZ2W5RN-ScanResultTopic-N8DD2JH1GRKF`
 
 2. **Find the Lambda function ARN**
-    
+
     📌 The Lamdba function ARN is required only if you plan to use the AWS CLI (as opposed to the console) to subscribe the Lambda to the SNS topic.
     - In the AWS console, go to **Services > Lambda**.
     - Search for the Lambda function you created previously. Example: `FSS_Scan_Send_Email`
@@ -253,7 +253,7 @@ After a scan occurs, this example Lambda function sends out a notification Email
     - On the top-left, locate the **ARN**.
     - Copy the ARN to a temporary location. Example: `arn:aws:lambda:us-east-1:123445678901:function:FSS_Scan_Send_Email`
     - Enter the following AWS CLI command to subscribe your Lamdba function to the SNS topic:
-        
+
         `aws sns subscribe --topic-arn <SNS_TOPIC_ARN> --protocol lambda --notification-endpoint <YOUR_LAMBDA_FUNCTION_ARN> --region <YOUR_REGION>`
     - where:
         - `<SNS_TOPIC_ARN>` is replaced with the SNS topic ARN you found earlier.

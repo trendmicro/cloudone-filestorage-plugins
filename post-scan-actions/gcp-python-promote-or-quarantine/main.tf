@@ -116,7 +116,7 @@ resource "google_cloudfunctions_function" "promote_and_quarantining_plugin" {
   description = "Promote and Quarantine plugin ${random_id.deploy_suffix.hex}"
   source_archive_bucket = google_storage_bucket.artifacts_bucket.name
   source_archive_object = google_storage_bucket_object.archive.name
-  runtime = "python38"
+  runtime = "python312"
   entry_point = "main"
   project = var.project_id
 

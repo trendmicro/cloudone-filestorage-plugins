@@ -12,7 +12,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: [trendmicro, cloudone, filestorage, s3, bucket, plugin, conformity, customcheck]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.0.2
+    SemanticVersion: 1.1.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-conformity-custom-check
 
 Parameters:
@@ -64,7 +64,7 @@ Resources:
     Properties:
       CodeUri: ./
       Handler: handler.lambda_handler
-      Runtime: python3.8
+      Runtime: python3.12
       MemorySize: 128
       Timeout: 30
       Tracing: Active
