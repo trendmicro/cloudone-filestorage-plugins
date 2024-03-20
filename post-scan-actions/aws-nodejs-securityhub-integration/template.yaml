@@ -30,6 +30,14 @@ Resources:
             Effect: Allow
             Resource:
               !Sub arn:${AWS::Partition}:securityhub:${AWS::Region}:${AWS::AccountId}:product/${AWS::AccountId}/default
+          - Action: logs:CreateLogGroup
+            Effect: Allow
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource: !Sub arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
         Version: "2012-10-17"
       PolicyName: SentToSecurityHubLambdaFunctionServiceRoleDefaultPolicy
       Roles:
