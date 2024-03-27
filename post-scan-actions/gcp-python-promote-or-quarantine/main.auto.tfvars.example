@@ -6,7 +6,19 @@ deployment_name = "<DEPLOYMENT_NAME>" // e.g. test-deployment
 
 scan_result_topic = "<TOPIC_NAME>" // e.g. my-deployment-scan-result-topic
 scanning_bucket = "<SCANNING_BUCKET_NAME>" // e.g. scanning-gcs-bucket
-quarantine_mode = "move" // move or copy leave it empty
+
+// quarantine settings
+quarantine_mode = "move" // move or copy. default is move.
 quarantine_bucket = "<QUARANTINE_BUCKET_NAME>" // e.g. quarantine-gcs-bucket Leave it empty if you don't want to quarantine files.
-promote_mode = "move" // move or copy
+quarantine_bucket_properties = { // additional properties for the quarantine bucket used when cross project or cross region is needed.
+    region = "<QUARANTINE_BUCKET_GCP_REGION>" // e.g. us-central1
+    project_id = "<QUARANTINE_BUCKET_GCP_PROJECT_ID>" // e.g. test-project-998877
+}
+
+// promote settings
+promote_mode = "move" // move or copy. default is move.
 promote_bucket = "<PROMOTE_BUCKET_NAME>" // e.g. promote-gcs-bucket Leave it empty if you don't want to promote files.
+promote_bucket_properties = { // additional properties for the promote bucket used when cross project or cross region is needed.
+    region = "<PROMOTE_BUCKET_GCP_REGION>" // e.g. us-central1
+    project_id = "<PROMOTE_BUCKET_GCP_PROJECT>" // e.g. test-project-998877
+}
