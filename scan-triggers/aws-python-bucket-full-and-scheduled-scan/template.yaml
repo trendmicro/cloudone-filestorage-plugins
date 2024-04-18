@@ -11,7 +11,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['trendmicro','cloudone','filestorage','s3','bucket','plugin','full','full-scan','scheduled','scheduled-scan']
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 2.1.0
+    SemanticVersion: 2.1.1
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/scan-triggers/aws-python-bucket-full-and-scheduled-scan
 Parameters:
   BucketName:
@@ -249,16 +249,25 @@ Resources:
     Properties:
       Code:
         ZipFile: |
-          const { S3Client, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
-          const client = new S3Client();
+          const util = require('util')
+          const { PutObjectCommand, S3 } = require('@aws-sdk/client-s3');
+          const client = new S3({});
 
           const fetchKeys = async (bucket, key) => {
             try {
-              const result = await client.send(new GetObjectCommand({
+              const result = await client.getObject({
                 Bucket: bucket,
                 Key: key
-              }))
-              const keys = JSON.parse(result.Body.toString('utf-8'));
+              })
+
+              if (!result.Body) {
+                throw new Error("Bucket key not found");
+              }
+
+              console.log("[FilterFunction] Finishing getting keys, start parsing...")
+              const bodyStream = result.Body;
+              const keys = JSON.parse(await bodyStream.transformToString());
+
               return keys;
             } catch (error) {
               throw error;
@@ -289,7 +298,7 @@ Resources:
           };
 
           exports.lambda_handler = async (event) => {
-            console.log(event);
+            console.log(`[FilterFunction] event: ${util.inspect(event, {depth: null})}`);
             const stateBucket = event.stateBucket;
             const stateKey = event.stateKey;
             const scanLimitPerIteration = event.limit;
