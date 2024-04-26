@@ -1,7 +1,9 @@
 {
   "version": "0.2",
   "allowCompoundWords": true,
-  "ignorePaths": [],
+  "ignorePaths": [
+    "yarn.lock"
+  ],
   "ignoreRegExpList": [
     ":.*:",
     "arn:.*"
