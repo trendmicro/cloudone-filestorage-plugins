@@ -23,7 +23,7 @@ Metadata:
         quarantine,
       ]
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 1.4.0
+    SemanticVersion: 1.4.1
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/post-scan-actions/aws-python-promote-or-quarantine
 
 Parameters:
