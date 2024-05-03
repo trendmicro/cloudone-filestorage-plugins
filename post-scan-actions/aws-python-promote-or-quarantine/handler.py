@@ -132,6 +132,9 @@ def delete_objects(bucket, prefix, objects):
     s3.delete_objects(Bucket=bucket, Delete=objects)
 
 def lambda_handler(event, context):
+
+    print('[Plugin] aws-python-promote-or-quarantin handler invoked')
+
     acl = os.environ.get('ACL')
 
     quarantine_bucket = os.environ.get('QUARANTINEBUCKET')
