@@ -1,7 +1,7 @@
 resource "google_cloud_scheduler_job" "workflow" {
   project          = var.project_id
   name             = "tm-c1fss-fs-pl-ws-${var.suffix}"
-  description      = "Cloud Scheduler for fullscan plugin workflow Jpb"
+  description      = "Cloud Scheduler for fullscan plugin workflow Job"
   schedule         = var.schedular_settings.cron
   time_zone        = var.schedular_settings.timezone
   attempt_deadline = "1800s"

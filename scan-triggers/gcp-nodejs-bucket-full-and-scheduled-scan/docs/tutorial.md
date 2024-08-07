@@ -4,7 +4,7 @@
 
 <walkthrough-tutorial-duration duration="10"></walkthrough-tutorial-duration>
 
-This tutorial will guide you to deploy a promote and quarantine function.
+This tutorial will guide you to deploy the full scan and schedule scan plugin.
 
 ## Project Setup
 
@@ -24,7 +24,7 @@ gcloud config set project <walkthrough-project-id/>
    terraform init
    ```
 
-1. Deploy the function and fill the variables following the CLI. (Or using the `main.auto.tfvars` file)
+1. Deploy the resources and fill the variables following the CLI. (Or using the `main.auto.tfvars` file)
 
    ```sh
    terraform apply
