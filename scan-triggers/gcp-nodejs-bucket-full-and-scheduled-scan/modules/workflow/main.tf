@@ -29,6 +29,9 @@ resource "google_cloud_scheduler_job" "workflow" {
 resource "google_cloud_tasks_queue" "workflow_queue" {
   name     = "tmfss-fullscan-workflow-queue-${var.suffix}"
   location = var.region
+  retry_config {
+    max_attempts = 3
+  }
 }
 
 resource "google_workflows_workflow" "fullscan_workflow" {
