@@ -53,7 +53,7 @@ def lambda_handler(event, context):
             ccaccountid = get_cc_accountid(account_id)
 
             # Get the bucket & object details
-            s3_domain_pattern = "s3(\..+)?\.amazonaws.com"
+            s3_domain_pattern = r"s3(\..+)?\.amazonaws.com"
             url = urllib.parse.urlparse(message["file_url"])
             # check pre-signed URL type, path or virtual
             if re.fullmatch(s3_domain_pattern, url.netloc):

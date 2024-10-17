@@ -36,7 +36,7 @@ MODES = {
 }
 
 DEFAULT_MODE = 'move'
-S3_DOMAIN_PATTERN = 's3(\..+)?\.amazonaws.com'
+S3_DOMAIN_PATTERN = r's3(\..+)?\.amazonaws.com'
 FSS_TAG_PREFIX = 'fss-'
 
 CODE_EMPTY = 0
