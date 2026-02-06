@@ -11,7 +11,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['trendmicro','cloudone','filestorage','s3','bucket','plugin','full','full-scan','scheduled','scheduled-scan']
     HomePageUrl: https://github.com/trendmicro/cloudone-filestorage-plugins
-    SemanticVersion: 2.1.1
+    SemanticVersion: 2.2.0
     SourceCodeUrl: https://github.com/trendmicro/cloudone-filestorage-plugins/tree/master/scan-triggers/aws-python-bucket-full-and-scheduled-scan
 Parameters:
   BucketName:
@@ -192,7 +192,7 @@ Resources:
             Ref: StateBucket
       Handler: index.lambda_handler
       MemorySize: 1024
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       Timeout: 900
     DependsOn:
       - PaginatorExecutionRoleDefaultPolicy
@@ -328,7 +328,7 @@ Resources:
             Ref: BucketName
       Handler: index.lambda_handler
       MemorySize: 512
-      Runtime: nodejs20.x
+      Runtime: nodejs22.x
       Timeout: 900
     DependsOn:
       - FilterExecutionRoleDefaultPolicy
@@ -388,7 +388,6 @@ Resources:
           import botocore
           from botocore.config import Config
           from botocore.exceptions import ClientError
-          import urllib.parse
           import uuid
           import datetime
 
@@ -461,7 +460,6 @@ Resources:
               return key.endswith('/')
 
           def handle_step_functions_event(bucket, bucket_region, key):
-              key = urllib.parse.unquote_plus(key)
               amz_request_id = "f"
               event_time = datetime.datetime.utcnow().isoformat() # ISO-8601 format, 1970-01-01T00:00:00.000Z, when Amazon S3 finished processing the request
 
