@@ -1,7 +1,6 @@
 const { nodeExternalsPlugin } = require('esbuild-node-externals')
 const rimraf = require('rimraf')
 const fs = require('fs')
-const path = require('path')
 const archiver = require('archiver')
 
 const OUT_DIR = 'dist'

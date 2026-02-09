@@ -1,0 +1,16 @@
+deployment_name = "<DEPLOYMENT_NAME>"
+project_id      = "<GCP_PROJECT_ID>"
+region          = "<GCP_REGION>"
+
+scanner_pubsub_topic_project = "<SCANNER_PUBSUB_TOPIC_GCP_PROJECT_ID>"
+scanner_pubsub_topic         = "<SCANNER_PUBSUB_TOPIC>"
+scan_result_topic            = "<SCAN_RESULT_TOPIC>"
+
+scanning_bucket_name = "<SCANNING_BUCKET_NAME>"
+
+schedular_settings = {
+  cron     = "0 0 * * 1"
+  timezone = "Etc/UTC"
+}
+
+trend_micro_fss_bucket_listener_role_id = "<BUCKET_LISTENER_ROLE_ID>"
