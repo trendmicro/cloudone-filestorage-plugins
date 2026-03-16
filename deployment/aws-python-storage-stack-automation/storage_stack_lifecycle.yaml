@@ -151,6 +151,7 @@ Resources:
 
           def lambda_handler(event, context):
               # get secret
+              print(event)
               secrets = boto3.client('secretsmanager').get_secret_value(SecretId=fss_key)
               sm_data = json.loads(secrets["SecretString"])
               new_api_format = sm_data["c1apikey"]
@@ -215,15 +216,19 @@ Resources:
                       response = s3_client.get_bucket_tagging(Bucket=bucket_name)
                       tags = response["TagSet"]
                       tag_status = tags
+                      print("tag_Status1: ", tag_status)
                   except ClientError:
                       no_tags = "does not have tags"
                       tag_status = no_tags
                   if tag_status == "does not have tags":
+                      print("does not have tags")
                       add_tag(s3_client, bucket_name, tag_list=[])
                       add_storage(cloud_one_api_key, bucket_name, ext_id, account_id, stack_id, kms_arn)
                   else:
+                      print("tag_Status2: ", tag_status)
                       for tags in tag_status:
                           if tags["Key"] == "FSSMonitored":
+                              print(tags["Value"].lower())
                               if tags["Value"].lower() == "no":
                                   # if tag FSSMonitored is no; quit
                                   print(
@@ -235,8 +240,12 @@ Resources:
                               elif tags["Value"].lower() != "yes":
                                   add_storage(cloud_one_api_key, bucket_name, ext_id, account_id, stack_id, kms_arn)
                                   break
-                      add_tag(s3_client, bucket_name, tag_list=tag_status)
-                      add_storage(cloud_one_api_key, bucket_name, ext_id, account_id, stack_id, kms_arn)
+                              elif tags["Value"].lower() == "yes": 
+                                  add_storage(cloud_one_api_key, bucket_name, ext_id, account_id, stack_id, kms_arn)
+                                  break
+                          else:
+                              add_tag(s3_client, bucket_name, tag_list=tag_status) #move this inside if to avoid duplicate tags 
+                              add_storage(cloud_one_api_key, bucket_name, ext_id, account_id, stack_id, kms_arn)
           def add_tag(s3_client, bucket_name, tag_list):
               tag_list.append({'Key':'FSSMonitored', 'Value': 'Yes'})
               print(f"Bucket: {bucket_name} lacks an FSSMonitored tag; adding")
@@ -310,10 +319,11 @@ Resources:
                 check_status(cloud_one_api_key, url)
           #check storage stack status
           def check_status(cloud_one_api_key, url):
+              time.sleep(10) #Adding delay to avoid response error in API
               #gather stack status
-              st_call = http.request('GET', url , headers = {'Authorization': cloud_one_api_key, 'Api-Version': 'v1'})
+              headers = {'Authorization': cloud_one_api_key, 'Api-Version': 'v1'}
+              st_call = http.request('GET', url, headers=headers)
               status = json.loads(st_call.data.decode('utf-8'))['status']
-              print("Status: " + status)
               while status == 'creating':
                   st_call = http.request('GET', url , headers = {'Authorization': cloud_one_api_key, 'Api-Version': 'v1'})
                   status = json.loads(st_call.data.decode('utf-8'))['status']
@@ -322,6 +332,7 @@ Resources:
                   print('Deployed Successfully')
               else:
                 print('Deployment Failed')
+
       TracingConfig:
         Mode: Active
       MemorySize: 128
